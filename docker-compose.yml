@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   tuition_db:
     image: postgres:13
