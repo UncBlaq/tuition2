@@ -51,7 +51,7 @@ def login(db: db_dependency, payload: OAuth2PasswordRequestForm = Depends()):
     return crud_institution.login_institution(db, payload)
 
 
-@student_router.post("/auth/login", tags=["Login"])
+@student_router.post("/user/auth/login", tags=["Login"])
 def login(db : db_dependency, payload : OAuth2PasswordRequestForm = Depends()):
 
     """
@@ -65,6 +65,7 @@ def login(db : db_dependency, payload : OAuth2PasswordRequestForm = Depends()):
     """
 
     return crud_student.login(db, payload)
+
 
 
 
