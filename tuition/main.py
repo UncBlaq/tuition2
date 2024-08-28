@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from authlib.integrations.starlette_client import OAuth
@@ -13,6 +13,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from tuition.institution import crud as crud_institution
 
 from tuition.student import crud as crud_student
+from tuition.student.services import StudentService
+from tuition.institution.services import InstitutionService
 
 
 
@@ -38,33 +40,24 @@ institution_models.Base.metadata.create_all(bind = engine)
 app.include_router(institution_router)
 
 
-@app.post("/user/auth/login", tags=["Login"])
+@app.post("/auth/login", tags=["Login"])
 def login(db: db_dependency, payload: OAuth2PasswordRequestForm = Depends()):
     """
-    ## Logs in an institution
-    Requires the following
-    ```
-    email: Email of the institution
-    password: 12-character password
-    ```
+    Logs in a user (student or institution)
     """
-    return crud_institution.login_institution(db, payload)
+    student = StudentService.get_student_by_email(db, payload.username)
+    if student:
+        # Handle student login
+        return crud_student.login(db, payload)
+    
+    institution = InstitutionService.get_institution_by_email(db, payload.username)
+    if institution:
+        # Handle institution login
+        return crud_institution.login_institution(db, payload)
+
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-@student_router.post("/user/auth/login", tags=["Login"])
-def login(db : db_dependency, payload : OAuth2PasswordRequestForm = Depends()):
-
-    """
-    ## Login a user
-    Requires the following
-    ```
-    email : str
-    password : str
-    ```
-    and returns a token pair 'access' 
-    """
-
-    return crud_student.login(db, payload)
 
 
 

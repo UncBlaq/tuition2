@@ -27,8 +27,8 @@ class InstitutionService:
         
 
     @staticmethod
-    def get_institution_by_email(db, email):
-
+    def get_institution_by_email(db, username):
+        email = username
         institution = db.query(Institution).filter(Institution.email == email).first()
         if not institution:
             raise HTTPException(

@@ -32,15 +32,9 @@ class StudentService:
         
 
     @staticmethod
-    def get_student_by_email(db, email):
-
-        student = db.query(Student).filter(Student.email == email).first()
-        if not student:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Invalid credentials"
-            )
-        return student
+    def get_student_by_email(db, username):
+        email = username
+        return db.query(Student).filter(Student.email == email).first()
     
 
     @staticmethod

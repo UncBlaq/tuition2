@@ -129,9 +129,6 @@ async def send_verification_email_institution(recipients, user):
         logging.error(f"Failed to send email: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send email")
     
-    
-
-
 
 async def send_password_reset_email(recipients, user):
     token = create_url_safe_token({"email": user.email})

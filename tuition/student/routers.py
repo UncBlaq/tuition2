@@ -61,20 +61,6 @@ def sign_up(db : db_dependency,  payload: StudentSignUp, background_tasks : Back
     return crud.sign_up(db, payload, background_tasks)
 
 
-# @student_router.post("/auth/login", status_code= status.HTTP_200_OK)
-# def login(db : db_dependency, payload : OAuth2PasswordRequestForm = Depends()):
-
-#     """
-#     ## Login a user
-#     Requires the following
-#     ```
-#     email : str
-#     password : str
-#     ```
-#     and returns a token pair 'access' 
-#     """
-
-#     return crud.login(db, payload)
 
 @student_router.post("/password-reset")
 def password_reset(db : db_dependency, payload : PasswordResquest, background_task :BackgroundTasks):

@@ -7,6 +7,7 @@ from tuition.emails import send_verification_email_institution, send_password_re
 
 from tuition.institution.models import Institution, SubAccount
 from tuition.institution.services import InstitutionService
+from tuition.student.services import StudentService
 
 
 # from google.cloud import storage
@@ -31,6 +32,7 @@ from tuition.institution.services import InstitutionService
 
 
 def sign_up_institution(db, payload, background_task):
+    StudentService.check_existing_email(db, payload.email)
     
     InstitutionService.check_existing_email(db, payload.email)
     hashed_password = Hash.bcrypt(payload.password)
@@ -97,12 +99,12 @@ def verify_user_account(token, db):
 def login_institution(db, payload):
     email = payload.username
     institution = InstitutionService.get_institution_by_email(db, email)
-    InstitutionService.check_if_verified(institution)
 
+    InstitutionService.check_if_verified(institution)
     InstitutionService.verify_password(payload.password, institution.hashed_password)
     
     access_token =  create_access_token_institution(data = {
-        "sub" : institution.email
+        "sub" : email
     })
     return {
         "access_token" : access_token,
@@ -117,13 +119,21 @@ def add_bank_details(db, payload, current_institution):
 
 
 def create_program(db, payload, Image, current_institution):
-    institution = InstitutionService.fetch_institution(db, current_institution.email)
-
     #     # Upload image to cloud storage => Update when my Google Devs account is updated
-    # image_url = cloud_storage_utils.upload_image_to_cloud(image)
+# image_url = cloud_storage_utils.upload_image_to_cloud(image)
+    institution = InstitutionService.fetch_institution(db, current_institution.email)
+    if institution:
+        return InstitutionService.create_new_program(db, payload, institution.id)
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You do not have permission to to create a new program, Contact Support")
+    
 
-    program = InstitutionService.create_new_program(db, payload, institution.id)
-    return program
+
+
+
+
+    # program = InstitutionService.create_new_program(db, payload, institution.id)
+    # return program
 
 
 

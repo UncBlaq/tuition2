@@ -9,6 +9,7 @@ from tuition.institution.models import SubAccount
 from tuition.security.jwt import create_access_token,  decode_url_safe_token
 from tuition.emails import send_verification_email, send_password_reset_email
 from tuition.student.services import StudentService
+from tuition.institution.services import InstitutionService
 
 from tuition.institution.models import Program
 
@@ -91,7 +92,8 @@ def confirm_password_reset(token, new_password, db):
 
 
 def sign_up(db, payload, background_tasks):
-    # StudentService.check_invalid_password_len(payload.password)
+    InstitutionService.check_existing_email(db, payload.email)
+
     StudentService.check_existing_email(db, payload.email)
     hashed_password = Hash.bcrypt(payload.password)
 
@@ -118,7 +120,7 @@ def login(db, payload):
     StudentService.verify_password(payload.password, student.hashed_password)
     
     access_token =  create_access_token(data = {
-        "sub" : student.email
+        "sub" : email
     })
     return {
         "access_token" : access_token,
@@ -206,51 +208,3 @@ def create_payment(db, program_id, current_student, background_tasks):
     background_tasks.add_task(send_payment_request, data, headers)
     return {"message": "Payment is being processed"}
 
-    
-#Create Transaction table and enable webhooks
-# async def create_payment(db, program_id, current_student):
-#     # Fetch student data from the database
-#     student = StudentService.get_student_by_email(db, current_student.email)
-
-#     # Fetch the program and its associated subaccount details
-#     program = db.query(Program).filter(Program.id == program_id).first()
-#     if not program:
-#         raise HTTPException(status_code=404, detail="Program not found")
-    
-#     subaccount = db.query(SubAccount).filter(SubAccount.institution_id == program.institution_id).first()
-#     if not subaccount:
-#         raise HTTPException(status_code=404, detail="Subaccount not found")
-
-#     url = 'https://api.flutterwave.com/v3/payments'
-#     headers = {
-#         'Authorization': f'Bearer {FLW_SECRET_KEY}',
-#         'Content-Type': 'application/json'
-#     }
-#     #cost changed(program.cost), program name changed(program.name)
-#     data = {
-#         "tx_ref": f"TUIT_{student.id}_{os.urandom(8).hex()}",  # Unique transaction reference
-#         "amount": 3000,  # Fetch the amount from the program
-#         "currency": "NGN",
-#         "redirect_url": "https://nike.com",
-#         "customer": {
-#             "email": student.email,
-#             "name": student.name,
-#             "phonenumber": student.phone_number
-#         },
-#         "customizations": {
-#             "title": "Medicine"  # Use the program name for the payment title
-#         },
-#         "subaccounts": [
-#             {
-#                "id": "RS_D87A9EE339AE28BFA2AE86041C6DE70E" # Adjust this ratio as needed
-#             }
-#         ]
-#     }
-
-#     async with httpx.AsyncClient() as client:
-#         try:
-#             response = await client.post(url, json=data, headers=headers)
-#             response.raise_for_status()
-#             return response.json()  # Return the payment link or relevant details to the frontend
-#         except httpx.HTTPStatusError as exc:
-#             raise HTTPException(status_code=exc.response.status_code, detail=exc.response.json())
