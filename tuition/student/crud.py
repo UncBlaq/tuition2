@@ -130,13 +130,11 @@ def login(db, payload):
 def password_reset(db, email, background_task):
     try:
         student = StudentService.get_student_by_email(db, email)
-        print("**student found")
-        if not student:
+        if student is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Student not found"
             )
-        print("****Sending mail")
         background_task.add_task(send_password_reset_email, [email], student)
         return JSONResponse(
             content={
