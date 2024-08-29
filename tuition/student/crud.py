@@ -129,7 +129,6 @@ def login(db, payload):
 
 def password_reset(db, email, background_task):
     try:
-        print("**starting password reset")
         student = StudentService.get_student_by_email(db, email)
         print("**student found")
         if not student:
