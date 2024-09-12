@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     MAIL_PASSWORD : str
     MAIL_FROM : str
     DOMAIN : str
+    FRONTEND_URL : str
 
 
 
