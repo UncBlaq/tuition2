@@ -116,6 +116,14 @@ def login(db, payload):
     email = payload.username
     student = StudentService.get_student_by_email(db, email)
     StudentService.check_if_verified(student)
+    data = {
+        "phone_number": student.phone_number,
+        "email": student.email,
+        "is_verified": student.is_verified,
+        "id": student.id,
+        "full_name": student.full_name,
+        "field_of_interest": student.field_of_interest
+    }
 
     StudentService.verify_password(payload.password, student.hashed_password)
     
@@ -125,7 +133,7 @@ def login(db, payload):
     return {
         "access_token" : access_token,
         "token_type" : "bearer",
-        "student" : student
+        "student" : data
     }
 
 def password_reset(db, email, background_task):
