@@ -54,7 +54,7 @@ def create_message(recipients : List[str], subject : str, body : str):
 
 async def send_verification_email(recipients, user):
     token = create_url_safe_token({"email": user.email})
-    link = f"https://{Config.DOMAIN}/student/verify/{token}"
+    link = f"http://{Config.FRONTEND_URL}/student/verify/{token}"
     html_message  = f"""
         <!DOCTYPE html>
         <html lang="en">
