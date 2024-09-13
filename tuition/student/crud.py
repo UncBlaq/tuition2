@@ -13,6 +13,8 @@ from tuition.institution.services import InstitutionService
 
 from tuition.institution.models import Program
 
+from tuition.student.schemas import StudentResponse
+
 FLW_SECRET_KEY = os.getenv('FLW_SECRET_KEY')
 
 
@@ -116,15 +118,7 @@ def login(db, payload):
     email = payload.username
     student = StudentService.get_student_by_email(db, email)
     StudentService.check_if_verified(student)
-    data = {
-        "phone_number": student.phone_number,
-        "email": student.email,
-        "is_verified": student.is_verified,
-        "id": student.id,
-        "full_name": student.full_name,
-        "field_of_interest": student.field_of_interest
-    }
-
+    student_object = StudentResponse.model_validate(student)
     StudentService.verify_password(payload.password, student.hashed_password)
     
     access_token =  create_access_token(data = {
@@ -133,7 +127,7 @@ def login(db, payload):
     return {
         "access_token" : access_token,
         "token_type" : "bearer",
-        "student" : data
+        "student" : student_object
     }
 
 def password_reset(db, email, background_task):

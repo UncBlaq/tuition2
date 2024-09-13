@@ -1,7 +1,5 @@
 from fastapi import APIRouter, status, BackgroundTasks, Depends
 
-from fastapi.security import OAuth2PasswordRequestForm
-
 from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login
 from tuition.database import db_dependency
 from tuition.student import crud
@@ -40,7 +38,6 @@ def confirm_reset_account_password(token : str, payload : PasswordResetConfirm, 
     """
 
     return crud.confirm_password_reset(token, payload.new_password, db)
-
 
 
 @student_router.post("/signup", response_model= StudentResponse, status_code= status.HTTP_201_CREATED)

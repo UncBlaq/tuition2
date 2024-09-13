@@ -1,7 +1,7 @@
 import re
 
 from typing import Optional, List, Text
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict
 
 
 class StudentSignUp(BaseModel):
@@ -44,7 +44,12 @@ class StudentResponse(BaseModel):
      email: str
      phone_number: Text
      field_of_interest: str
-     is_verified: bool = False
+     is_verified: bool 
+     field_of_interest : str
+
+     model_config = ConfigDict(
+        from_attributes=True
+        )
 
 class Token(BaseModel):
     access_token: str
