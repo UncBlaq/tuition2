@@ -7,14 +7,10 @@ from tuition.database import db_dependency
 from tuition.student import crud
 from tuition.security.oauth2 import get_current_user
 
-
-
-
 student_router = APIRouter(
     prefix="/student",
     tags=["Student"]
 )
-
 
 @student_router.get('/verify/{token}')
 def verify_user_account(token : str, db :db_dependency):

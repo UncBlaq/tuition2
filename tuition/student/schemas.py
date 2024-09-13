@@ -32,6 +32,12 @@ class StudentSignUp(BaseModel):
         if password and value != password:
             raise ValueError('Passwords do not match')
         return value
+    
+    @field_validator('full_name', 'email', 'phone_number', 'field_of_interest')
+    def non_empty_strings(cls, value):
+        if not value or value.strip() == "":
+            raise ValueError('This field cannot be empty')
+        return value
 
 class StudentResponse(BaseModel):
      full_name: str
