@@ -16,6 +16,19 @@ from tuition.student import crud as crud_student
 from tuition.student.services import StudentService
 from tuition.institution.services import InstitutionService
 
+from fastapi import FastAPI
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://5ae921dea24fec55cca8023da3bbe4c3@o4507693153386496.ingest.de.sentry.io/4507948209143888",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
 
 
 app = FastAPI(

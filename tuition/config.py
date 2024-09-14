@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     MAIL_FROM : str
     DOMAIN : str
     FRONTEND_URL : str
+    SSL_PREFIX : str
 
 
 

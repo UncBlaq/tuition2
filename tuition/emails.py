@@ -54,7 +54,7 @@ def create_message(recipients : List[str], subject : str, body : str):
 
 async def send_verification_email(recipients, user):
     token = create_url_safe_token({"email": user.email})
-    link = f"http://{Config.FRONTEND_URL}/student/verify/{token}"
+    link = f"{Config.SSL_PREFIX}://{Config.FRONTEND_URL}/student/verify/{token}"
     html_message  = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -94,7 +94,7 @@ async def send_verification_email(recipients, user):
 
 async def send_verification_email_institution(recipients, user):
     token = create_url_safe_token({"email": user.email})
-    link = f"http://{Config.FRONTEND_URL}/institution/verify/{token}"
+    link = f"{Config.SSL_PREFIX}://{Config.FRONTEND_URL}/institution/verify/{token}"
     html_message  = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -132,7 +132,7 @@ async def send_verification_email_institution(recipients, user):
 
 async def send_password_reset_email(recipients, user):
     token = create_url_safe_token({"email": user.email})
-    link = f"https://{Config.DOMAIN}/student/password-reset-confirm/{token}"
+    link = f"{Config.SSL_PREFIX}://{Config.DOMAIN}/student/password-reset-confirm/{token}"
     html_message  = f"""
         <!DOCTYPE html>
         <html lang="en">

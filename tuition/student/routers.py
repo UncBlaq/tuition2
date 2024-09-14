@@ -10,8 +10,23 @@ student_router = APIRouter(
     tags=["Student"]
 )
 
+
+
+@student_router.post("/signup", response_model= StudentResponse, status_code= status.HTTP_201_CREATED)
+def sign_up(db : db_dependency,  payload: StudentSignUp, background_tasks : BackgroundTasks):
+
+    """
+    ## Creates a user
+    Requires the following
+    ```
+    
+
+    ```
+    """
+    return crud.sign_up(db, payload, background_tasks)
+
 @student_router.get('/verify/{token}')
-def verify_user_account(token : str, db :db_dependency):
+def verify_student_account(token : str, db :db_dependency):
 
     """
     ## Verifies the user's account
@@ -22,7 +37,20 @@ def verify_user_account(token : str, db :db_dependency):
     ```
     """
 
-    return crud.verify_user_account(token, db)
+    return crud.verify_student_account(token, db)
+
+
+
+@student_router.post("/password-reset")
+def password_reset(db : db_dependency, payload : PasswordResquest, background_task :BackgroundTasks):
+    """
+    ## Sends a password reset link to the user's email
+    Requires the following
+    ```
+    email : str
+    ```
+    """
+    return crud.password_reset(db, payload.email, background_task)
 
 
 @student_router.post('/password-reset-confirm/{token}')
@@ -39,32 +67,6 @@ def confirm_reset_account_password(token : str, payload : PasswordResetConfirm, 
 
     return crud.confirm_password_reset(token, payload.new_password, db)
 
-
-@student_router.post("/signup", response_model= StudentResponse, status_code= status.HTTP_201_CREATED)
-def sign_up(db : db_dependency,  payload: StudentSignUp, background_tasks : BackgroundTasks):
-
-    """
-    ## Creates a user
-    Requires the following
-    ```
-    
-
-    ```
-    """
-    return crud.sign_up(db, payload, background_tasks)
-
-
-
-@student_router.post("/password-reset")
-def password_reset(db : db_dependency, payload : PasswordResquest, background_task :BackgroundTasks):
-    """
-    ## Sends a password reset link to the user's email
-    Requires the following
-    ```
-    email : str
-    ```
-    """
-    return crud.password_reset(db, payload.email, background_task)
 
 
 @student_router.post("/payments")
