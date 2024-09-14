@@ -71,7 +71,7 @@ def verify_student_account(token, db):
 
         # Create an access token
         access_token = create_access_token(data={"sub": student_email})
-        logger.info(f"Access token created for student {student_email}")
+        logger.info(f"{student_email} logged in successfully")
 
         # Update the student's verification status
         student.is_verified = True

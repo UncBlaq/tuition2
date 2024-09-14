@@ -49,20 +49,6 @@ def verify_account(token : str, db :db_dependency):
     return crud.verify_user_account(token, db)
 
 
-
-# @institution_router.post("/user/auth/login")
-# def login(db: db_dependency, payload: OAuth2PasswordRequestForm = Depends()):
-#     """
-#     ## Logs in an institution
-#     Requires the following
-#     ```
-#     email: Email of the institution
-#     password: 12-character password
-#     ```
-#     """
-#     return crud.login_institution(db, payload)
-
-
 @institution_router.post("/add_bank_details", status_code= status.HTTP_201_CREATED)
 def add_bank_details(db: db_dependency, payload : InstitutionBank, current_institution : Login = Depends(get_current_user)):
     """

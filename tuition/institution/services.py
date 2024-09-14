@@ -3,6 +3,7 @@ from tuition.institution.models import Institution
 from tuition.security.hash import Hash
 from tuition.institution.models import SubAccount, Program
 
+from tuition.logger import logger
 
 class InstitutionService:
 
@@ -66,6 +67,8 @@ class InstitutionService:
 
     # Fetches the user from the database based on the current session's user
     def fetch_institution(db, email):
+            # Fetching institution logs
+        logger.info(f"Fetching institution details for: {email}")
         # Query the database for a user with the same email as the current user
         return db.query(Institution).filter(Institution.email == email).first()
          
