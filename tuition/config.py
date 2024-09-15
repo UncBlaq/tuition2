@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     SUPABASE_URL : str
     SUPABASE_KEY : str
     INSTITUTION_URL : str
-    INSTITUTION_SSL : str
 
 
 
