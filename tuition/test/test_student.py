@@ -89,8 +89,23 @@ def test_invalid_email_sign_up(client, setup_database, full_name, email, phone_n
     assert response.json()["detail"] == "Email already exists"
     
 
+# @pytest.mark.parametrize("email, password", [("canvascoder01@gmail.com", "Password1#")])
+# def test_login(client, setup_database, email, password):
 
-# # @pytest.mark.parametrize("username, phone_number", [("newuser2@example.com", "123")])
-# # def test_login(client, setup_database, username, email, phone_number):
+#     # First login the user
+#     response = client.post(
+#         "/auth/login",
+#         data={"username": email, "password": password}
+#     )
+#     assert response.status_code == status.HTTP_201_CREATED
+#     # Then login the user
+#     response = client.post(
+#         "/auth/login",
+#         data = {"password": password}
+#     )
+#     data = response.json()
+#     assert response.status_code == status.HTTP_200_OK
+#     assert data["access_token"] is not None
+#     assert data["token_type"] == "bearer"
     
  
