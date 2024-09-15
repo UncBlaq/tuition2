@@ -94,7 +94,7 @@ async def send_verification_email(recipients, user):
 
 async def send_verification_email_institution(recipients, user):
     token = create_url_safe_token({"email": user.email})
-    link = f"{Config.SSL_PREFIX}://{Config.FRONTEND_URL}/institution/verify/{token}"
+    link = f"{Config.INSTITUTION_SSL}://{Config.INSTITUTION_URL}/institution/verify/{token}"
     html_message  = f"""
         <!DOCTYPE html>
         <html lang="en">
