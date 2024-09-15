@@ -88,6 +88,8 @@ class InstitutionService:
         db.refresh(new_bank_details)  # To get the id of the newly created bank_details
         return new_bank_details
     
+    
+    
     def create_new_program(db, payload, institution_id):
         new_program = Program(
                 name_of_program=payload['name_of_program'],

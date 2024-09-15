@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     DOMAIN : str
     FRONTEND_URL : str
     SSL_PREFIX : str
+    SUPABASE_URL : str
+    SUPABASE_KEY : str
 
 
 

@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, UploadFile, File
 from fastapi.responses import JSONResponse
 from tuition.security.hash import Hash
 from tuition.security.jwt import create_access_token, decode_url_safe_token, create_access_token_institution
@@ -9,6 +9,9 @@ from tuition.institution.models import Institution, SubAccount
 from tuition.institution.services import InstitutionService
 from tuition.student.services import StudentService
 from tuition.logger import logger
+
+from tuition.config import Config
+from supabase import create_client, Client
 
 
 # from google.cloud import storage
@@ -152,32 +155,80 @@ def add_bank_details(db, payload, current_institution):
 
 
 
-def create_program(db, payload, Image, current_institution):
-        # Log the attempt to create a program
-    logger.info(f"Attempting to create a new program for Institution: {current_institution.email}")
+# Supabase credentials
+SUPABASE_URL = Config.SUPABASE_URL
+SUPABASE_KEY = Config.SUPABASE_KEY
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    #     # Upload image to cloud storage => Update when my Google Devs account is updated
-# image_url = cloud_storage_utils.upload_image_to_cloud(image)
-    institution = InstitutionService.fetch_institution(db, current_institution.email)
+# @app.post("/upload-file/")
+# async def upload_file(file: UploadFile = File(...)):
+#     content = await file.read()
+#     response = supabase.storage.from_("tuition_image").upload(file.filename, content)
+#     if response.status_code == 200:
+#         file_url = f"{SUPABASE_URL}/storage/v1/object/public/your-bucket-name/{file.filename}"
+#         return {"url": file_url}
+#     return {"error": "File upload failed"}
 
+
+async def upload_image_to_supabase(file: UploadFile):
+    content = await file.read()
+    response = supabase.storage.from_('your-bucket-name').upload(file.filename, content)
+    if response.status_code == 200:
+        return f"{SUPABASE_URL}/storage/v1/object/public/your-bucket-name/{file.filename}"
+    return None
+
+
+async def create_program(db, payload, Image: UploadFile, current_institution):
     try:
-        # Fetch institution details
-        logger.info(f"Fetching institution details for: {current_institution.email}")
+        # Synchronous fetch (this stays as-is if it's synchronous)
         institution = InstitutionService.fetch_institution(db, current_institution.email)
-        
-        if institution:
-            # Log before creating the program
-            logger.info(f"Creating new program for Institution ID: {institution.id}")
-            return InstitutionService.create_new_program(db, payload, institution.id)
-        else:
-            # Log if the institution is not found
-            logger.warning(f"Institution not found or no permission to create program: {current_institution.email}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You do not have permission to create a new program. Contact Support")
-    
+
+        if not institution:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission denied")
+
+        # Asynchronously upload image
+        image_url = await upload_image_to_supabase(Image)
+
+        if not image_url:
+            raise HTTPException(status_code=500, detail="Image upload failed")
+
+        # Now create the program with the image URL
+        payload['image_url'] = image_url
+        return InstitutionService.create_new_program(db, payload, institution.id)
+
     except Exception as e:
-        # Log unexpected errors
-        logger.error(f"An error occurred while creating the program: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the program")
+        logger.error(f"Error occurred: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Program creation failed")
+
+
+# def create_program(db, payload, Image, current_institution):
+#         # Log the attempt to create a program
+#     logger.info(f"Attempting to create a new program for Institution: {current_institution.email}")
+
+
+
+#     #     # Upload image to cloud storage => Update when my Google Devs account is updated
+#     # image_url = cloud_storage_utils.upload_image_to_cloud(image)
+#     institution = InstitutionService.fetch_institution(db, current_institution.email)
+
+#     try:
+#         # Fetch institution details
+#         logger.info(f"Fetching institution details for: {current_institution.email}")
+#         institution = InstitutionService.fetch_institution(db, current_institution.email)
+        
+#         if institution:
+#             # Log before creating the program
+#             logger.info(f"Creating new program for Institution ID: {institution.id}")
+#             return InstitutionService.create_new_program(db, payload, institution.id)
+#         else:
+#             # Log if the institution is not found
+#             logger.warning(f"Institution not found or no permission to create program: {current_institution.email}")
+#             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You do not have permission to create a new program. Contact Support")
+    
+#     except Exception as e:
+#         # Log unexpected errors
+#         logger.error(f"An error occurred while creating the program: {e}")
+#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the program")
 
   
 
