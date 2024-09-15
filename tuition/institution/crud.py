@@ -194,7 +194,7 @@ async def create_program(db, payload, Image: UploadFile, current_institution):
 
         # Now create the program with the image URL
         payload['image_url'] = image_url
-        return InstitutionService.create_new_program(db, payload, institution.id)
+        return await InstitutionService.create_new_program(db, payload, institution.id)
 
     except Exception as e:
         logger.error(f"Error occurred: {e}")

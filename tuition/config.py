@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     SSL_PREFIX : str
     SUPABASE_URL : str
     SUPABASE_KEY : str
-    INSTITUTION_URL : str
+
 
 
 
