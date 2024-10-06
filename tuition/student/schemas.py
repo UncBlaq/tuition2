@@ -1,16 +1,16 @@
 import re
 
 from typing import Optional, List, Text
-from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict
-
+from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict, Field
 
 class StudentSignUp(BaseModel):
-    full_name: str
-    email: str 
-    phone_number: Text 
-    password : str
-    confirm_password : str 
-    field_of_interest : str
+
+    full_name: str = Field(..., min_length=3, max_length=255)
+    email: str = Field(..., min_length=5, max_length=255)
+    phone_number: str = Field(..., min_length=10, max_length=20)  # Depends on international phone formats
+    password: str = Field(..., min_length=8, max_length=100)
+    confirm_password: str = Field(..., min_length=8, max_length=100)
+    field_of_interest: str = Field(..., min_length=3, max_length=255)
 
     @field_validator('password')
     def validate_password(cls, value):

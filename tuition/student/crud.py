@@ -1,50 +1,44 @@
 import os
-import httpx
 
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from tuition.security.hash import Hash
 from tuition.student.models import Student
-from tuition.institution.models import SubAccount
-from tuition.security.jwt import create_access_token,  decode_url_safe_token
-from tuition.emails import send_verification_email, send_password_reset_email
-from tuition.student.services import StudentService
-from tuition.institution.services import InstitutionService
-
-from tuition.institution.models import Program
+from tuition.src_utils import send_payment_request
+from sqlalchemy.future import select
+from tuition.security.jwt import create_access_token, decode_url_safe_token
+from tuition.emails_utils import SmtpMailService
+import tuition.student.utils as student_utils
+import tuition.institution.utils as institution_utils
+import tuition.admin.utils as admin_utils
 
 from tuition.student.schemas import StudentResponse
 from tuition.logger import logger
 
 FLW_SECRET_KEY = os.getenv('FLW_SECRET_KEY')
 
-def sign_up(db, payload, background_tasks):
-    logger.info("Creating a new user: %s", payload.email)
+async def sign_up_student(db, payload, background_task):
+    logger.info("Creating a new student: %s", payload.email)
 
-    InstitutionService.check_existing_email(db, payload.email)
+    await admin_utils.check_existing_email(db, payload.email)
+    await institution_utils.check_existing_email(db, payload.email)
+    await student_utils.check_existing_email(db, payload.email)
 
-    StudentService.check_existing_email(db, payload.email)
     hashed_password = Hash.bcrypt(payload.password)
+    new_student = student_utils.create_student(payload, hashed_password)
 
-    new_student = Student(
-        full_name = payload.full_name,
-        email = payload.email,
-        phone_number = payload.phone_number,
-        hashed_password = hashed_password,
-        field_of_interest = payload.field_of_interest
-    )
     db.add(new_student)
-    db.commit()
-    db.refresh(new_student)
+    await db.commit()
+    await db.refresh(new_student)
 
-    background_tasks.add_task(send_verification_email, [new_student.email], new_student)
+    smtp_service = SmtpMailService(new_student.email)  
+    background_task.add_task(smtp_service.send_verification_email, user = "student")
 
     logger.info(f"User {new_student.email} has been created")
     return new_student
 
 
-
-def verify_student_account(token, db):
+async def verify_student_account(token, db):
     try:
         # Decode the token
         logger.info("Decoding token for student account verification")
@@ -60,8 +54,9 @@ def verify_student_account(token, db):
 
         # Query the database for the student
         logger.info(f"Querying database for student with email: {student_email}")
-        student = db.query(Student).filter(Student.email == student_email).first()
-
+        stmt = select(Student).filter(Student.email == student_email)
+        result = await db.execute(stmt)
+        student = result.scalar_one_or_none()
         if not student:
             logger.warning(f"Student with email {student_email} not found")
             raise HTTPException(
@@ -75,7 +70,7 @@ def verify_student_account(token, db):
 
         # Update the student's verification status
         student.is_verified = True
-        db.commit()
+        await db.commit()
         logger.info(f"Student {student_email} verified successfully")
 
         return JSONResponse(
@@ -96,16 +91,16 @@ def verify_student_account(token, db):
 
 
 
-def login(db, payload):
+async def login_student(db, payload):
     logger.info(f"Login attempt for user: {payload.username}")
 
     email = payload.username
-    student = StudentService.get_student_by_email(db, email)
+    student = await student_utils.get_student_by_email(db, email)
 
     logger.info(f"User found: {email}")
-    StudentService.check_if_verified(student)
-    student_object = StudentResponse.model_validate(student)
-    StudentService.verify_password(payload.password, student.hashed_password)
+    student_utils.check_if_verified(student)
+    student_object =  StudentResponse.model_validate(student)
+    student_utils.verify_password(payload.password, student.hashed_password)
     
     access_token =  create_access_token(data = {
         "sub" : email
@@ -119,11 +114,11 @@ def login(db, payload):
     }
 
 
-def password_reset(db, email, background_task):
+async def reset_password(db, email, background_task):
     try:
         logger.info(f"Attempting to reset password for email: {email}")
         
-        student = StudentService.get_student_by_email(db, email)
+        student = await student_utils.get_student_by_email(db, email)
         if student is None:
             logger.warning(f"Password reset failed: Student with email {email} not found")
             raise HTTPException(
@@ -131,8 +126,8 @@ def password_reset(db, email, background_task):
                 detail="Student not found"
             )
         
-        logger.info(f"Student {email} found. Sending password reset email")
-        background_task.add_task(send_password_reset_email, [email], student)
+        smtp_service = SmtpMailService(student.email) 
+        background_task.add_task(smtp_service.send_password_reset_email, user = "student")
         
         logger.info(f"Password reset link sent to email: {email}")
         return JSONResponse(
@@ -148,7 +143,7 @@ def password_reset(db, email, background_task):
         )
 
 
-def confirm_password_reset(token, new_password, db):
+async def confirm_password_reset(token, new_password, db):
     try:
         logger.info("Attempting to confirm password reset")
         
@@ -165,7 +160,7 @@ def confirm_password_reset(token, new_password, db):
             )
         
         logger.info(f"Querying student by email: {student_email}")
-        student = db.query(Student).filter(Student.email == student_email).first()
+        student = await student_utils.get_student_by_email(db, student_email)
         
         if not student:
             
@@ -178,7 +173,7 @@ def confirm_password_reset(token, new_password, db):
         # Reset the password
         new_hash = Hash.bcrypt(new_password)
         student.hashed_password = new_hash
-        db.commit()
+        await db.commit()
         
         logger.info(f"Password reset successfully for {student_email}")
         return JSONResponse(
@@ -196,28 +191,22 @@ def confirm_password_reset(token, new_password, db):
         )
 
 
-    
+import uuid    
 
-def send_payment_request(data, headers):
-    headers = {
-        'Authorization': f'Bearer {FLW_SECRET_KEY}',
-        'Content-Type': 'application/json'
-    }
-    url = 'https://api.flutterwave.com/v3/payments'
-    response = httpx.post(url, json=data, headers=headers)
-    response.raise_for_status()
-    return response.json()
 
-def create_payment(db, program_id, current_student, background_tasks):
-    # Fetch student data from the database
-    student = StudentService.get_student_by_email(db, current_student.email)
+async def create_payment(db, program_id, current_student):
+    logger.info(f"Creating payment for student********: {current_student.email}")
 
-    # Fetch the program and its associated subaccount details
-    program = db.query(Program).filter(Program.id == program_id).first()
+    student = await student_utils.get_student_by_email(db, current_student.email)
+    logger.info(f"Student ALL*****: {student}")
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+  
+    program = await institution_utils.get_program_by_id(db, program_id)
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
-    
-    subaccount = db.query(SubAccount).filter(SubAccount.institution_id == program.institution_id).first()
+
+    subaccount = await institution_utils.get_program_subaccount(db, program.institution_id)  
     if not subaccount:
         raise HTTPException(status_code=404, detail="Subaccount not found")
     
@@ -225,28 +214,32 @@ def create_payment(db, program_id, current_student, background_tasks):
         'Authorization': f'Bearer {FLW_SECRET_KEY}',
         'Content-Type': 'application/json'
     }
+    
+    float_cost = float(program.cost)
+    logger.info(f"{subaccount.subaccount_id}")
 
     data = {
+        # "tx_ref": f"TUIT_{student.id}_{uuid.uuid4().hex()}",
         "tx_ref": f"TUIT_{student.id}_{os.urandom(8).hex()}",  # Unique transaction reference
-        "amount": program.cost,  # Fetch the amount from the program
+        "amount": float_cost,  # Fetch the amount from the program
         "currency": "NGN",
         "redirect_url": "https://yourplatform.com/payment-success",
         "customer": {
             "email": student.email,
-            "name": student.name,
+            "name": student.full_name,
             "phonenumber": student.phone_number
         },
         "customizations": {
-            "title": program.name  # Use the program name for the payment title
+            "title": program.name_of_program  # Use the program name for the payment title
         },
         "subaccounts": [
             {
-                "id": subaccount.subaccount_id  # Adjust this ratio as needed
+                "id": program.subaccount_id  
             }
         ]
     }
 
     # Add the task to the background tasks
-    background_tasks.add_task(send_payment_request, data, headers)
-    return {"message": "Payment is being processed"}
+    return send_payment_request(data, headers)
+
 

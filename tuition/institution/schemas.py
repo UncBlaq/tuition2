@@ -1,22 +1,21 @@
 import re
 
 from typing import Optional
-from datetime import datetime
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict, Field, EmailStr
 
 
 class InstitutionSignup(BaseModel):
-    name_of_institution : str
-    type_of_institution : str
-    website : Optional[str]
-    address : str
-    email : str
-    country : str
-    official_name : str
-    brief_description : str
-    password : str
-    confirm_password : str
-    confirm_password : str
+
+    name_of_institution: str = Field(..., min_length=3, max_length=255)
+    type_of_institution: str = Field(..., min_length=3, max_length=100)
+    website: Optional[str] = Field(None, max_length=255)
+    address: str = Field(..., min_length=5, max_length=255)
+    email: EmailStr = Field(..., min_length=5, max_length=255)
+    country: str = Field(..., min_length=2, max_length=100)
+    official_name: str = Field(..., min_length=3, max_length=255)
+    brief_description: str = Field(..., min_length=10, max_length=500)
+    password: str = Field(..., min_length=8, max_length=100)
+    confirm_password: str = Field(..., min_length=8, max_length=100)
 
     @field_validator('password')
     def validate_password(cls, value):
@@ -39,6 +38,14 @@ class InstitutionSignup(BaseModel):
             raise ValueError('Passwords do not match')
         return value
     
+    
+    @field_validator('name_of_institution', 'email', 'country')
+    def non_empty_strings(cls, value):
+        if not value or value.strip() == "":
+            raise ValueError('This field cannot be empty')
+        return value
+
+    
 
 class InstitutionResponse(BaseModel):
     name_of_institution : str
@@ -49,7 +56,13 @@ class InstitutionResponse(BaseModel):
     country : str
     official_name : str
     brief_description : str
-    is_verified : bool = False
+    is_verified : bool = False # Default is False
+
+    
+    model_config = ConfigDict(
+        from_attributes=True
+        )
+
 
 
 class Token(BaseModel):
@@ -68,18 +81,16 @@ class InstitutionBank(BaseModel):
     currency : str
     bank_name : str
 
+    model_config = ConfigDict(
+        from_attributes=True
+        )
+
 
 class Login(BaseModel):
     email: str
     password: str
 
 
-# class CreateProgram(BaseModel):
-#     name_of_program : str
-#     application_deadline : datetime
-#     description: str
-#     cost
-#     image_url: str
 
 
 

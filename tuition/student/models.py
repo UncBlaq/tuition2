@@ -1,31 +1,35 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Numeric
-from decimal import Decimal
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from sqlalchemy import Column, String, Text, DateTime, func
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
+import json
 
-from sqlalchemy import Column, String, Boolean, Text, Date
+from sqlalchemy import Column, String, Boolean, Text
 from tuition.database import Base
 
 
 class Student(Base):
     __tablename__ = 'students'
 
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    full_name = Column(String(255), nullable=False)
     email = Column(Text, unique=True, nullable=False)
+    role = Column(String, nullable=False, default = 'user')
     phone_number = Column(Text, nullable=False)
     hashed_password = Column(String, nullable=False)
-    field_of_interest = Column(String, nullable=False)
+    field_of_interest = Column(String(255), nullable=False)
     is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
 
     # transactions = relationship('Transaction', back_populates='students')
     # payments = relationship('Payment', back_populates='students')
+    # def to_json(self):
+    #     """Convert the instance to a JSON string"""
+    #     return json.dumps(self.to_dict(), default=str)
 
-    def __repr__(self):
-        return f"<User {self.full_name}>"
-    
+    # def __repr__(self):
+    #     """Representation method can return the object as a dict or JSON instead of a string"""
+    #     return self.to_json()
     
 #exclude = True
 
@@ -37,7 +41,7 @@ class Student(Base):
 #     student_id = Column(Integer, ForeignKey('students.id'))
 #     transaction_id = Column(Integer, ForeignKey('transactions.id'))
 #     amount = Column(Numeric, nullable=False)
-#     payment_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+#     payment_date = Column(DateTime, default=lambda: datetime.now)
 #     payment_status = Column(String, default='Completed')
 
 #     student = relationship('Student', back_populates='payments')

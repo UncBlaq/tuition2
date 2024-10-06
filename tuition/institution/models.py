@@ -1,21 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Numeric
-
+from sqlalchemy import Column, DateTime, String, Text, ForeignKey, Numeric, DateTime, func, CHAR, CheckConstraint
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
-
 from sqlalchemy import Column, String, Text, Boolean
+
 from tuition.database import Base
 
-
 class Institution(Base):
-
     __tablename__ = 'institutions'
 
-    id = Column(Integer, primary_key=True, index=True)
-    name_of_institution = Column(String, nullable=False)
-    type_of_institution = Column(String, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+
+    role = Column(String, nullable=False, default='user')
+    name_of_institution = Column(String(255), nullable=False)
+    type_of_institution = Column(String(255), nullable=False)
     website = Column(Text)
-    account_id = Column(String)
     address = Column(Text)
     email = Column(Text, unique=True, nullable=False)
     country = Column(String, nullable=False)
@@ -23,40 +22,22 @@ class Institution(Base):
     brief_description = Column(String, nullable=False)
     is_verified = Column(Boolean, nullable=False, default=False)
     hashed_password = Column(String, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # transactions = relationship('Transaction', back_populates='institutions')
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
+
     sub_accounts = relationship('SubAccount', back_populates='institution')
     programs = relationship('Program', back_populates='institution')
-
-    def __repr__(self):
-        return f"<Institution {self.name_of_institution}>"
-    
-
-
-
-# class Transaction(Base):
-#     __tablename__ = 'transactions'
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     student_id = Column(Integer, ForeignKey('students.id'))
-#     institution_id = Column(Integer, ForeignKey('institutions.id'))
-#     amount = Column(Numeric, nullable=False)
-#     currency = Column(String, nullable=False)
-#     status = Column(String, default='Pending')
-#     transaction_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-#     flw_transaction_id = Column(String, nullable=True)
 
 
 
 class SubAccount(Base):
     __tablename__ = 'sub_accounts'
 
-    id = Column(Integer, primary_key=True, index=True)
-    institution_id = Column(Integer, ForeignKey('institutions.id'))
-    subaccount_id = Column(String, unique=True)
-    account_name = Column(String, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    institution_id = Column(UUID, ForeignKey('institutions.id'))
+    subaccount_id = Column(String, unique=True, default= None)
+    account_name = Column(String(255), nullable=False)
     account_number = Column(String, nullable=False)
     account_email = Column(String)
     account_type = Column(String)
@@ -65,24 +46,38 @@ class SubAccount(Base):
     bank_name = Column(String, nullable=False)
     split_type = Column(String)  # percentage or flat
     split_value = Column(Numeric)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
 
     institution = relationship('Institution', back_populates='sub_accounts')
 
 
-
 class Program(Base):
     __tablename__ = 'programs'
-    
-    id = Column(Integer, primary_key=True, index=True)
-    name_of_program = Column(String, nullable=False)
-    institution_id = Column(Integer, ForeignKey('institutions.id'))
-    application_deadline = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    description = Column(String)
-    cost = Column(Numeric)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+
+    name_of_program = Column(String(255), nullable=False)
+    institution_id = Column(UUID, ForeignKey('institutions.id'))
+    # Deadline should be nullable for evergreen programs (always available)
+    application_deadline = Column(DateTime(timezone=True), nullable=True)  # TIMESTAMPTZ equivalent
+    # Boolean to track if the program is always available
+    always_available = Column(Boolean, default=False)
+    description = Column(Text)
+    cost = Column(Numeric(12, 2), nullable=True)
+    subaccount_id = Column(String)
+    is_free = Column(Boolean, default=False)
+    currency_code = Column(CHAR(3), nullable=False)
     image_url = Column(String, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
 
     institution = relationship("Institution", back_populates='programs')
+
+    __table_args__ = (
+        CheckConstraint(
+            "(application_deadline > now()) OR (application_deadline IS NULL)", 
+            name="check_application_deadline_future"
+        ),
+    )

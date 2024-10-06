@@ -1,16 +1,12 @@
 from decimal import Decimal
-import json
-from datetime import datetime 
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated,Optional
 from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, Form
-
-# from fastapi.security import OAuth2PasswordRequestForm
 
 from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank
 from tuition.database import db_dependency
 from tuition.institution import crud
 from tuition.security.oauth2 import get_current_user
-
 
 institution_router = APIRouter(
     prefix="/institution",
@@ -18,7 +14,7 @@ institution_router = APIRouter(
 )
 
 @institution_router.post("/signup", response_model= InstitutionResponse, status_code=status.HTTP_201_CREATED)
-def sign_up(db: db_dependency, payload: InstitutionSignup, background_tasks: BackgroundTasks):
+async def sign_up_institution(db: db_dependency, payload: InstitutionSignup, background_tasks: BackgroundTasks) -> dict:
     """
     ## Creates a institution
     Requires the following
@@ -31,11 +27,11 @@ def sign_up(db: db_dependency, payload: InstitutionSignup, background_tasks: Bac
     description: Description of the institution
     ```
     """
-    return crud.sign_up_institution(db, payload, background_tasks)
+    return await crud.sign_up_institution(db, payload, background_tasks)
 
 
-@institution_router.get('/verify/{token}')
-def verify_account(token : str, db :db_dependency):
+@institution_router.get('/verify/{token}', status_code= status.HTTP_200_OK)
+async def verify_account(token : str, db :db_dependency) -> str:
 
     """
     ## Verifies the user's account
@@ -46,11 +42,11 @@ def verify_account(token : str, db :db_dependency):
     ```
     """
 
-    return crud.verify_user_account(token, db)
+    return await crud.verify_user_account(token, db)
 
 
 @institution_router.post("/add_bank_details", status_code= status.HTTP_201_CREATED)
-def add_bank_details(db: db_dependency, payload : InstitutionBank, current_institution : Login = Depends(get_current_user)):
+async def add_bank_details(db: db_dependency, payload : InstitutionBank, current_institution : Login = Depends(get_current_user)):
     """
     ## Adds bank details for the institution
     Requires the following         
@@ -61,26 +57,32 @@ def add_bank_details(db: db_dependency, payload : InstitutionBank, current_insti
     account_type: Type of account (Bank Account, Flutterwave Account, etc.)
     ```
     """
-    return crud.add_bank_details(db, payload, current_institution)
-    
+    return await crud.add_bank_details(db, payload, current_institution)
 
-@institution_router.post("/offering/program", status_code= status.HTTP_200_OK)
-def create_program(
-            db: db_dependency,
-            name_of_program: Annotated[str, Form()],
-            application_deadline: Annotated[datetime, Form()],
-            cost : Annotated[Decimal, Form()],
-            description: Annotated[str, Form()],
-            image_url: Annotated[str, Form()],
-            Image: UploadFile,
-            current_institution: Login = Depends(get_current_user)
-        ):
+
+@institution_router.post("/offering/program", status_code= status.HTTP_201_CREATED)
+async def create_program(
+        db: db_dependency,
+        name_of_program: Annotated[str, Form()],
+        always_available: Annotated[bool, Form()],
+        is_free : Annotated[bool, Form()],
+        currency_code: Annotated[str, Form(..., min_length=3, max_length=3)],
+        description: Annotated[str, Form()],
+        image: UploadFile,
+        application_deadline: Optional[datetime] = Form(None),
+        cost:  Optional[Decimal] = Form(None),
+        current_institution: Login = Depends(get_current_user)
+    )-> dict:
+    
     payload = {
+        "always_available" : always_available,
         "name_of_program": name_of_program,
         "application_deadline": application_deadline,
+        "always_available" : always_available,
         "cost": cost,
-        "description": description,
-        "image_url": image_url
+        "is_free": is_free,
+        "currency_code": currency_code,
+        "description": description
     }
     
     """
@@ -93,5 +95,5 @@ def create_program(
     course_price: Price of the course
     course_image: Image of the course
     """
-    return crud.create_program(db, payload, Image, current_institution)
+    return await crud.create_program(db, payload, image, current_institution)
     

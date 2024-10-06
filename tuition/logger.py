@@ -1,8 +1,10 @@
 import logging
 from logging.handlers import SysLogHandler
 
-PAPERTRAIL_HOST = "logs2.papertrailapp.com"
-PAPERTRAIL_PORT =  35336
+from tuition.config import Config
+
+PAPERTRAIL_HOST = Config.PAPERTRAIL_HOST
+PAPERTRAIL_PORT =  Config.PAPERTRAIL_PORT
 
 handler = SysLogHandler(address=(PAPERTRAIL_HOST, PAPERTRAIL_PORT))
 
@@ -15,5 +17,3 @@ logger.setLevel(logging.INFO)
 
 # Add Papertrail handler
 logger.addHandler(handler)
-
-
