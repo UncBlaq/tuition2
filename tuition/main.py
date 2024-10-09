@@ -48,10 +48,6 @@ async def create_db():
         from tuition.student import models as student_models
         from tuition.institution import models as institution_models
         from tuition.admin import models as admin_models
-        
-        # await conn.run_sync(institution_models.Base.metadata.drop_all)
-        # await conn.run_sync(student_models.Base.metadata.drop_all)
-        # await conn.run_sync(admin_models.Base.metadata.drop_all)
 
         await conn.run_sync(student_models.Base.metadata.create_all)
         await conn.run_sync(institution_models.Base.metadata.create_all)

@@ -1,4 +1,6 @@
 from typing import Optional
+import random
+import string
 from fastapi import HTTPException, status, UploadFile
 from pydantic import BaseModel
 from tuition.security.hash import Hash
@@ -20,12 +22,23 @@ class Login(BaseModel):
     password: str
 
 
+
+
+def generate_random_name(length = 10):
+    letters = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters) for i in range(length))
+
+
+
+
 async def upload_image_to_supabase(image: UploadFile):
     print("Uploading image")
+    image_name = generate_random_name()
+    # image.filename = image_name
     content = await image.read()
     print("Image uploaded")
     try:
-        response = supabase.storage.from_('alt_bucket').upload(image.filename, content)
+        response = supabase.storage.from_('alt_bucket').upload(image_name, content)
         print({
             "message": "Image uploaded successfully",
             "data" : response
@@ -33,7 +46,7 @@ async def upload_image_to_supabase(image: UploadFile):
         print(response)
         if response.status_code == 200:
             print("Image URL:", response.url)
-            return f"{SUPABASE_URL}/storage/v1/object/public/alt_bucket/{image.filename}"
+            return f"{SUPABASE_URL}/storage/v1/object/public/alt_bucket/{image_name}"
     except Exception as e:
         print("Error uploading image:", str(e))
         # print(response)

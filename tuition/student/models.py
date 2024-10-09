@@ -1,7 +1,6 @@
-from sqlalchemy import Column, String, Text, DateTime, func
+from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-import json
 
 from sqlalchemy import Column, String, Boolean, Text
 from tuition.database import Base
@@ -23,13 +22,8 @@ class Student(Base):
 
     # transactions = relationship('Transaction', back_populates='students')
     # payments = relationship('Payment', back_populates='students')
-    # def to_json(self):
-    #     """Convert the instance to a JSON string"""
-    #     return json.dumps(self.to_dict(), default=str)
 
-    # def __repr__(self):
-    #     """Representation method can return the object as a dict or JSON instead of a string"""
-    #     return self.to_json()
+
     
 #exclude = True
 
@@ -46,3 +40,19 @@ class Student(Base):
 
 #     student = relationship('Student', back_populates='payments')
 #     transaction = relationship('Transaction', back_populates='payments')
+
+
+class Transaction(Base):
+
+    __tablename__ = 'transactions'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    student_id = Column(UUID, ForeignKey('students.id'))
+    transaction_date = Column(DateTime, default=func.now())
+    transaction_type = Column(String, nullable=False)
+    amount = Column(Numeric, nullable=False)
+    status = Column(String, default='Completed')
+
+    # institution_id = Column(UUID, ForeignKey('institutions.id'))
+    # payments = relationship('Payment', back_populates='transactions')
+

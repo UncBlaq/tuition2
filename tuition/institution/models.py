@@ -28,6 +28,7 @@ class Institution(Base):
 
     sub_accounts = relationship('SubAccount', back_populates='institution')
     programs = relationship('Program', back_populates='institution')
+    # transactions = relationship('Transaction', back_populates='institution')
 
 
 

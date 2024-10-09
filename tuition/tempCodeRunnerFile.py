@@ -1,20 +1,10 @@
-import os
-import logging
-logger = logging.getLogger(__name__)
-from fastapi.templating import Jinja2Templates
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
+import random
+import string
 
-# Define BASE_DIR and templates directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "tuition", "templates"))
+def generate_random_name(length = 10):
+    letters = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters) for i in range(length))
 
-# Check if template exists
-template_path = os.path.join(BASE_DIR, 'tuition', 'student', 'crud.py')
-if not os.path.exists(template_path):
-    logger.error(f"Template file does not exist: {template_path}")
-else:
-    logger.info(f"Template file found: {template_path}")
-
-# BASE_DIR = Path(__file__).resolve().parent
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Example usage:
+random_string = generate_random_name()
+print(random_string)
