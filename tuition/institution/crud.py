@@ -8,7 +8,7 @@ from tuition.institution.schemas import InstitutionResponse
 from tuition.src_utils import upload_image_to_supabase
 
 
-from tuition.institution.models import Institution, SubAccount
+from tuition.institution.models import Institution
 import tuition.institution.utils as institution_utils
 import tuition.student.utils as student_utils
 import tuition.admin.utils as admin_utils
@@ -137,19 +137,18 @@ async def create_program(db, payload, Image: UploadFile, current_institution):
 
         await institution_utils.validate_deadline(payload["application_deadline"], payload["always_available"])
         await institution_utils.validate_cost(payload['cost'], payload['is_free'])
+        #Write a function to validate if program already exists
         logger.info("Validations done!!!")
 
         institution = await institution_utils.get_institution_by_email(db, current_institution.email)
         if institution is None:
             logger.warning(f"Institution not found: {current_institution.email}")
             raise HTTPException(status_code=404, detail="Institution not found and You do not have access to this endpoint")
-        logger.info("%s found!!!!!!!!!!!!!!!!!!!!!!!!", current_institution.email)
 
         subaccount = await institution_utils.get_subaccount_id_by_institution(db, institution.id)
         if not subaccount:
             logger.warning(f"Subaccount not found for Institution: {current_institution.email}")
             raise HTTPException(status_code=404, detail="Subaccount not found, Add Instition account details before creating a Program")
-
         #  upload image
         image_url = await upload_image_to_supabase(Image)
         if not image_url:
@@ -157,4 +156,12 @@ async def create_program(db, payload, Image: UploadFile, current_institution):
         
         # Now create the program with the image URL
         payload['image_url'] = image_url
-        return await institution_utils.create_new_program(db, payload, institution.id, subaccount.subaccount_id)
+        new_program = await institution_utils.create_new_program(db, payload, institution.id, subaccount.subaccount_id)
+
+        await institution_utils.update_category_program_relation(db, payload["categories"], new_program["id"])
+
+        return new_program
+
+
+
+

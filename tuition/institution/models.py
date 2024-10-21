@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String, Text, ForeignKey, Numeric, DateTime, func, CHAR, CheckConstraint
+from sqlalchemy import Column, DateTime, String, Text, ForeignKey, Numeric, DateTime, func, CHAR, CheckConstraint, Table
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy.orm import relationship
@@ -31,7 +31,6 @@ class Institution(Base):
     # transactions = relationship('Transaction', back_populates='institution')
 
 
-
 class SubAccount(Base):
     __tablename__ = 'sub_accounts'
 
@@ -53,17 +52,31 @@ class SubAccount(Base):
 
     institution = relationship('Institution', back_populates='sub_accounts')
 
+program_category_association = Table(
+    'program_category_association',
+    Base.metadata,
+    Column('program_id', UUID(as_uuid=True), ForeignKey('programs.id')),
+    Column('category_id', UUID(as_uuid=True), ForeignKey('categories.id'))
+)
+
+class Category(Base):
+    __tablename__ = 'categories'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String(255), nullable=False, unique=True)
+
+    programs = relationship(
+        'Program', 
+        secondary=program_category_association, 
+        back_populates='categories'
+    )
 
 class Program(Base):
     __tablename__ = 'programs'
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-
+    program_level = Column(String(255), nullable=False)
     name_of_program = Column(String(255), nullable=False)
     institution_id = Column(UUID, ForeignKey('institutions.id'))
-    # Deadline should be nullable for evergreen programs (always available)
-    application_deadline = Column(DateTime(timezone=True), nullable=True)  # TIMESTAMPTZ equivalent
-    # Boolean to track if the program is always available
+    application_deadline = Column(DateTime(timezone=True), nullable=True)
     always_available = Column(Boolean, default=False)
     description = Column(Text)
     cost = Column(Numeric(12, 2), nullable=True)
@@ -71,10 +84,15 @@ class Program(Base):
     is_free = Column(Boolean, default=False)
     currency_code = Column(CHAR(3), nullable=False)
     image_url = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     institution = relationship("Institution", back_populates='programs')
+    categories = relationship(
+        'Category', 
+        secondary=program_category_association, 
+        back_populates='programs'
+    )
 
     __table_args__ = (
         CheckConstraint(
@@ -82,3 +100,47 @@ class Program(Base):
             name="check_application_deadline_future"
         ),
     )
+
+
+
+
+# class Category(Base):
+#     __tablename__ = 'categories'
+
+#     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+#     name = Column(String(255), nullable=False, unique=True)
+
+#     programs = relationship('Program', back_populates='category')
+    
+
+# class Program(Base):
+#     __tablename__ = 'programs'
+
+#     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+#     program_level = Column(String(255), nullable=False)
+#     Category_id = Column(UUID, ForeignKey("categories.id"))
+
+#     name_of_program = Column(String(255), nullable=False)
+#     institution_id = Column(UUID, ForeignKey('institutions.id'))
+#     # Deadline should be nullable for evergreen programs (always available)
+#     application_deadline = Column(DateTime(timezone=True), nullable=True)  # TIMESTAMPTZ equivalent
+#     # Boolean to track if the program is always available
+#     always_available = Column(Boolean, default=False)
+#     description = Column(Text)
+#     cost = Column(Numeric(12, 2), nullable=True)
+#     subaccount_id = Column(String)
+#     is_free = Column(Boolean, default=False)
+#     currency_code = Column(CHAR(3), nullable=False)
+#     image_url = Column(String, nullable=False)
+#     created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
+#     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
+
+#     institution = relationship("Institution", back_populates='programs')
+#     category = relationship("Category", back_populates='programs')
+
+#     __table_args__ = (
+#         CheckConstraint(
+#             "(application_deadline > now()) OR (application_deadline IS NULL)", 
+#             name="check_application_deadline_future"
+#         ),
+#     )

@@ -33,3 +33,4 @@ async def get_db():
 
 # Annotated to declare dependency for FastAPI routes
 db_dependency = Annotated[AsyncSession, Depends(get_db)]
+

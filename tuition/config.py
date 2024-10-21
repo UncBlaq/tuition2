@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     SUPABASE_KEY : str
     PAPERTRAIL_HOST : str
     PAPERTRAIL_PORT : int
+    DATABASE_URL : str
 
 
 

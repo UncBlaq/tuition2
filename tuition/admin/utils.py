@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.future import select
 from tuition.admin.models import Admin
+from tuition.institution.models import Category
 
 
 async def check_existing_email(db, email: str):
@@ -101,3 +102,25 @@ async def check_role(user):
     )
 
 
+async def check_if_category_exist(db, category):
+     
+     stmt = select(Category).filter(Category.name == category)
+     result = await db.execute(stmt)
+     category_exists = result.scalar_one_or_none()  # Fetches the result or None if not found
+     if category_exists:
+          logger.info("Category already exists")
+          raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Category already exists"
+          )
+     return
+
+async def add_program_category(db, category):
+     
+     new_category = Category(name=category)
+     db.add(new_category)
+     await db.commit()
+     await db.refresh(new_category)
+     logger.info(f"New category {new_category.name} added successfully")
+     
+     return new_category.id

@@ -5,6 +5,7 @@ from pydantic import UUID4
 from tuition.admin.schemas import AdminSignUp
 from tuition.security.oauth2 import get_current_user
 from tuition.src_utils import Login
+from tuition.institution.schemas import Category
 
 
 admin_router = APIRouter(
@@ -53,4 +54,17 @@ async def add_subaccount_id(db : db_dependency , subaccount_id : str, email : st
     ```
     """
     return await crud.add_subaccount_id(db, current_user, subaccount_id, email)
+
+
+@admin_router.post("/admin/program_category", status_code=status.HTTP_201_CREATED)
+async def add_program_category(db : db_dependency, category : Category, current_user : Login = Depends(get_current_user)):
+    """
+    ## Adds a program category and only admin is Authorized
+    Requires the following
+    ```
+    name: Name of the category
+    description: Description of the category
+    ```
+    """
+    return await crud.add_program_category(db, category, current_user) 
 

@@ -28,5 +28,6 @@ asyncpg
 supabase
 aiosqlite
 pytest-asyncio
+alembic
 
 

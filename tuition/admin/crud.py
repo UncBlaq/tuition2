@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+
 from tuition.logger import logger
 from tuition.security.hash import Hash
 import tuition.institution.utils as institution_utils
@@ -82,7 +84,7 @@ async def add_subaccount_id(db, current_user, subaccount_id, email):
 
     admin_user = await admin_utils.get_admin_by_email(db, current_user.email)
     if not admin_user:
-        raise Exception("Admin not found and you are not allowed to access this endpoint.")
+        raise Exception("You are not allowed to access this endpoint.")
     await admin_utils.check_role(admin_user)
 
     institution = await institution_utils.get_institution_by_email(db, email)
@@ -100,6 +102,25 @@ async def add_subaccount_id(db, current_user, subaccount_id, email):
         "subaccount": subaccount,
         "email": email
     }
+
+
+async def add_program_category(db, category, current_user):
+    logger.info("Updating program_category by: %s", current_user.email)
+    
+    admin_user = await admin_utils.get_admin_by_email(db, current_user.email)
+    if not admin_user:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to access this endpoint."
+        )
+    await admin_utils.check_if_category_exist(db, category)
+    
+    await admin_utils.add_program_category(db, category)
+
+    return {
+        "message": f"Category successfully added"
+    }
+    
 
 
 

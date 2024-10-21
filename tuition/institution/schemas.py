@@ -62,6 +62,30 @@ class InstitutionResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
         )
+    
+from enum import Enum
+from fastapi import HTTPException
+
+class ProgramLevel(str, Enum):
+    graduate = "Graduate"
+    undergraduate = "Undergraduate"
+    postgraduate = "Postgraduate"
+
+class Category(str, Enum):
+    arts_and_humanities = "Arts and Humanities"
+    business = "Business"
+    language_learning = "language learning"
+    applied_natural_science = "Applied Natural Science"
+    health = "Health"
+    information_Technology = "Information Technology"
+    math_and_logic = "Math and Logic"
+    engineering = "Engineering"
+    social_science = "Social Science"
+    physical_science = "Physical Science"
+    data_science = "Data Science"
+    education = "Education"
+
+
 
 
 

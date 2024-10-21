@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from tuition.institution.models import Institution
 from tuition.institution.schemas import InstitutionBank
 from tuition.security.hash import Hash
-from tuition.institution.models import SubAccount, Program
+from tuition.institution.models import SubAccount, Program, program_category_association, Category
 from tuition.logger import logger
 
 from sqlalchemy import select
@@ -104,23 +104,69 @@ async def create_new_bank_details(db, payload, institution_id):
 
 async def create_new_program(db, payload, institution_id, subaccount_id):
     new_program = Program(
-            name_of_program=payload['name_of_program'],
-            always_available = payload['always_available'],
-            application_deadline=payload['application_deadline'],
-            cost = payload['cost'],
-            is_free = payload['is_free'],
-            currency_code=payload['currency_code'],
-            description=payload['description'],
-            institution_id=institution_id,
-            subaccount_id=subaccount_id,
-            image_url=payload['image_url'] 
+        name_of_program=payload['name_of_program'],
+        program_level=payload['program_level'],
+        always_available=payload['always_available'],
+        application_deadline=payload['application_deadline'],
+        cost=payload['cost'],
+        is_free=payload['is_free'],
+        currency_code=payload['currency_code'],
+        description=payload['description'],
+        institution_id=institution_id,
+        subaccount_id=subaccount_id,
+        image_url=payload['image_url']
     )
-    
+
+    # Step 2: Add the program to the database and commit
     db.add(new_program)
     await db.commit()
-    db.refresh(new_program)  
-    return payload
+    await db.refresh(new_program) 
+    print({
+        "I don run am" : "Yessssss!!!!!!!",
+        "event": new_program
+    })
 
+    program_json = {
+            "id": new_program.id,
+            "program_name": new_program.name_of_program,
+            "program_level": new_program.program_level,
+            "always_available": new_program.always_available,
+            "application_deadline": new_program.application_deadline,
+            "cost": new_program.cost,
+            "is_free": new_program.is_free,
+            "currency_code": new_program.currency_code,
+            "description": new_program.description,
+            "institution_id": new_program.institution_id,
+            "subaccount_id": new_program.subaccount_id,
+            "image_url": new_program.image_url
+        }
+    return   program_json
+    # return new_program
+
+async def update_category_program_relation(db, categories, program_id):
+    # Prepare a list for bulk insert
+    program_category_list = []
+
+    # Loop through the list of categories sent by the client
+    for category_name in categories:
+        # Query the category based on the name
+        category = await db.execute(select(Category).filter_by(name=category_name))
+        category_obj = category.scalar_one_or_none()
+
+        if category_obj:
+            # For each category, prepare a dictionary of {program_id, category_id}
+            program_category_list.append({
+                'program_id': program_id,
+                'category_id': category_obj.id
+            })
+
+    # Ensure that there are categories to insert
+    if program_category_list:
+        # Bulk insert the associations
+        await db.execute(program_category_association.insert().values(program_category_list))
+
+    # Commit the changes to the database
+    await db.commit()
 
 async def validate_deadline(application_deadline, always_available):
 # If the program is always available, the application deadline must be None

@@ -1,9 +1,10 @@
 from decimal import Decimal
+from typing import List
 from datetime import datetime
 from typing import Annotated,Optional
 from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, Form
 
-from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank
+from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank, ProgramLevel, Category
 from tuition.database import db_dependency
 from tuition.institution import crud
 from tuition.security.oauth2 import get_current_user
@@ -14,7 +15,7 @@ institution_router = APIRouter(
 )
 
 @institution_router.post("/signup", response_model= InstitutionResponse, status_code=status.HTTP_201_CREATED)
-async def sign_up_institution(db: db_dependency, payload: InstitutionSignup, background_tasks: BackgroundTasks) -> dict:
+async def sign_up_institution(db: db_dependency, payload: InstitutionSignup, background_tasks: BackgroundTasks):
     """
     ## Creates a institution
     Requires the following
@@ -59,41 +60,51 @@ async def add_bank_details(db: db_dependency, payload : InstitutionBank, current
     """
     return await crud.add_bank_details(db, payload, current_institution)
 
+from fastapi import HTTPException
 
-@institution_router.post("/offering/program", status_code= status.HTTP_201_CREATED)
+
+@institution_router.post("/offering/program", status_code=status.HTTP_201_CREATED)
 async def create_program(
-        db: db_dependency,
-        name_of_program: Annotated[str, Form()],
-        always_available: Annotated[bool, Form()],
-        is_free : Annotated[bool, Form()],
-        currency_code: Annotated[str, Form(..., min_length=3, max_length=3)],
-        description: Annotated[str, Form()],
-        image: UploadFile,
-        application_deadline: Optional[datetime] = Form(None),
-        cost:  Optional[Decimal] = Form(None),
-        current_institution: Login = Depends(get_current_user)
-    )-> dict:
-    
+    db: db_dependency,
+    name_of_program: Annotated[str, Form()],
+    program_level: Annotated[ProgramLevel, Form()],
+    categories: Annotated[List[str], Form()],  # Accept a list of strings
+    always_available: Annotated[bool, Form()],
+    is_free: Annotated[bool, Form()],
+    currency_code: Annotated[str, Form(..., min_length=3, max_length=3)],
+    description: Annotated[str, Form()],
+    image: UploadFile,
+    application_deadline: Optional[datetime] = Form(None),
+    cost: Optional[Decimal] = Form(None),
+    current_institution: Login = Depends(get_current_user)
+):
+    # Validate and convert categories
+    category_object = []
+    for category_str_list in categories:
+        category_list = list(category_str_list.split(','))
+        for category in category_list:
+            try:
+                # Try to append the category after converting it to the Enum
+                category_object.append(Category(category))
+
+            except ValueError as err:
+                # Raise an HTTPException with the error message for the invalid category
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid category: '{category}'. Error: {err}"
+                            )
     payload = {
-        "always_available" : always_available,
+        "always_available": always_available,
         "name_of_program": name_of_program,
         "application_deadline": application_deadline,
-        "always_available" : always_available,
         "cost": cost,
         "is_free": is_free,
         "currency_code": currency_code,
-        "description": description
+        "description": description,
+        "program_level": program_level,
+        "categories": category_object
     }
-    
-    """
-    ## Offers a program for the institution
-    Requires the following         
-    ```
-    title: Title of the program
-    description: Description of the program
-    course_duration: Duration of the course
-    course_price: Price of the course
-    course_image: Image of the course
-    """
+
     return await crud.create_program(db, payload, image, current_institution)
-    
+
+
