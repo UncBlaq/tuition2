@@ -103,7 +103,6 @@ class InstitutionBank(BaseModel):
     account_holder_name : str
     country : str
     currency : str
-    bank_name : str
 
     model_config = ConfigDict(
         from_attributes=True

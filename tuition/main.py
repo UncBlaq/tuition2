@@ -29,8 +29,13 @@ from fastapi import FastAPI
 
 
 app = FastAPI(
-    title= "Tuition App",
-    description="Tuition API"
+    title="Tuition App",
+    description="An API to manage tuition payments, student enrollment, programs, and institutions",
+    version="1.0.0",
+    contact={
+        "name": "JM Adereti",
+        "email": "aderetimicheal08@gmail.com",
+    }
 )
 
 
@@ -70,7 +75,16 @@ app.include_router(admin_router)
 @app.post("/auth/login",status_code=status.HTTP_200_OK, tags=["Login"])
 async def login(db: db_dependency, payload: OAuth2PasswordRequestForm = Depends()):
     """
-    Logs in a user (student or institution)
+    Logs in a user (student, institution, or admin) using their email address.
+    
+    ### Parameters:
+    - **db**: Database session dependency to interact with the database.
+    - **email**: The email address used for login, passed as a query parameter.
+    - **payload**: OAuth2 password request form, which includes the password for authentication.
+
+    ### Returns:
+    - A login response specific to the type of user (student, institution, or admin).
+    - Raises a 401 HTTPException for invalid credentials.
     """
     student = await student_utils.get_student_by_email(db, payload.username)
     if student:

@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import List
 from datetime import datetime
 from typing import Annotated,Optional
-from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, Form
+from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, Form, HTTPException
 
 from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank, ProgramLevel, Category
 from tuition.database import db_dependency
@@ -17,17 +17,31 @@ institution_router = APIRouter(
 @institution_router.post("/signup", response_model= InstitutionResponse, status_code=status.HTTP_201_CREATED)
 async def sign_up_institution(db: db_dependency, payload: InstitutionSignup, background_tasks: BackgroundTasks):
     """
-    ## Creates a institution
-    Requires the following
-    ```
-    name: Name of the institution
-    email: Email of the institution
-    password: 12-character password
-    contact_number: Contact number of the institution
-    address: Address of the institution
-    description: Description of the institution
-    ```
+    ## Creates a new institution account
+
+    This endpoint registers a new institution in the system by storing its details in the database. It may also trigger background tasks, such as sending a welcome email.
+
+    ### Parameters:
+    - **db**: Database session dependency used to interact with the database.
+    - **payload**: The institution signup payload containing the required fields:
+        - **name_of_institution**: The name of the institution (str) with a minimum length of 3 and a maximum length of 255 characters.
+        - **type_of_institution**: The type of institution (str) with a minimum length of 3 and a maximum length of 100 characters.
+        - **website**: (Optional) The official website of the institution (str), with a maximum length of 255 characters.
+        - **address**: The physical address of the institution (str) with a minimum length of 5 and a maximum length of 255 characters.
+        - **email**: The email address of the institution (str), validated as a proper email format, with a minimum length of 5 and a maximum length of 255 characters.
+        - **country**: The country where the institution is located (str) with a minimum length of 2 and a maximum length of 100 characters.
+        - **official_name**: The official name of the institution (str) with a minimum length of 3 and a maximum length of 255 characters.
+        - **brief_description**: A brief description of the institution (str) with a minimum length of 10 and a maximum length of 500 characters.
+
+    - **background_tasks**: A FastAPI BackgroundTasks object used to execute background processes, such as sending a confirmation or welcome email.
+
+    ### Returns:
+    - An `InstitutionResponse` object with the details of the newly created institution.
+
+    ### Status Code:
+    - **201 Created**: Indicates that the institution account was successfully created.
     """
+
     return await crud.sign_up_institution(db, payload, background_tasks)
 
 
@@ -35,12 +49,22 @@ async def sign_up_institution(db: db_dependency, payload: InstitutionSignup, bac
 async def verify_account(token : str, db :db_dependency) -> str:
 
     """
-    ## Verifies the user's account
-    Requires the following
-    ```
-    token : str
+    ## Verifies the institution's account
 
-    ```
+    This endpoint verifies a institution's account using a provided token. 
+    The token is typically a one-time use token sent to the user via email 
+    during the registration process.
+
+    **Parameters:**
+    - `token` (str): The token sent to the institution's email for account verification.
+
+    **Returns:**
+    - (str): A success message indicating the verification status of the account.
+
+    **Responses:**
+    - **200 OK**: Returns a success message if the account is verified successfully.
+    - **404 Not Found**: If the token is invalid or expired.
+    - **422 Unprocessable Entity**: If the token format is incorrect.
     """
 
     return await crud.verify_user_account(token, db)
@@ -50,17 +74,33 @@ async def verify_account(token : str, db :db_dependency) -> str:
 async def add_bank_details(db: db_dependency, payload : InstitutionBank, current_institution : Login = Depends(get_current_user)):
     """
     ## Adds bank details for the institution
-    Requires the following         
-    ```
-    bank_name: Name of the bank
-    account_number: Account number of the institution
-    account_holder_name: Account holder's name
-    account_type: Type of account (Bank Account, Flutterwave Account, etc.)
-    ```
+
+    This endpoint allows institutions to add their bank details. 
+    It requires the current institution to be authenticated and provides 
+    the necessary bank details in the payload.
+
+    **Parameters:**
+    - `db` (db_dependency): The database session dependency.
+    - `payload` (InstitutionBank): The bank details to be added, which should include:
+        - `account_number` (str): Account number of the institution.
+        - `bank_name` (str): Name of the bank.
+        - `account_holder_name` (str): Name of the institution's account holder.
+        - `country` (str): The country where the bank is located.
+        - `currency` (str): The currency associated with the account.
+
+    - `current_institution` (Login): The currently authenticated institution 
+      (automatically retrieved from the authentication dependency).
+
+    **Returns:**
+    - (str): A success message indicating that the bank details have been added.
+
+    **Responses:**
+    - **201 Created**: Indicates that the bank details were added successfully.
+    - **400 Bad Request**: If the payload is invalid or missing required fields.
+    - **401 Unauthorized**: If the institution is not authenticated.
+    - **403 Forbidden**: If the institution does not have permission to add bank details.
     """
     return await crud.add_bank_details(db, payload, current_institution)
-
-from fastapi import HTTPException
 
 
 @institution_router.post("/offering/program", status_code=status.HTTP_201_CREATED)
@@ -78,6 +118,42 @@ async def create_program(
     cost: Optional[Decimal] = Form(None),
     current_institution: Login = Depends(get_current_user)
 ):
+    
+    """
+    ## Creates a new program offering
+
+    This endpoint allows institutions to create a new program offering. 
+    The program details, including its categories and specifications, 
+    must be provided in the form data.
+
+    **Parameters:**
+    - `db` (db_dependency): The database session dependency.
+    - `name_of_program` (str): The name of the program being offered.
+    - `program_level` (ProgramLevel): The level of the program (e.g., Undergraduate, Postgraduate).
+    - `categories` (List[str]): A list of categories associated with the program, 
+      where each category is a string.
+    - `always_available` (bool): Indicates if the program is always available for enrollment.
+    - `is_free` (bool): Indicates if the program is offered for free.
+    - `currency_code` (str): The currency code (3 letters, e.g., USD) for the program's cost.
+    - `description` (str): A detailed description of the program.
+    - `image` (UploadFile): An image file representing the program.
+    - `application_deadline` (Optional[datetime]): The deadline for program applications.
+    - `cost` (Optional[Decimal]): The cost of the program.
+
+    - `current_institution` (Login): The currently authenticated institution 
+      (automatically retrieved from the authentication dependency).
+
+    **Returns:**
+    - (str): A success message indicating that the program has been created.
+
+    **Responses:**
+    - **201 Created**: Indicates that the program was created successfully.
+    - **400 Bad Request**: If the form data is invalid or required fields are missing, 
+      or if an invalid category is provided.
+    - **401 Unauthorized**: If the institution is not authenticated.
+    - **403 Forbidden**: If the institution does not have permission to create a program.
+    """
+
     # Validate and convert categories
     category_object = []
     for category_str_list in categories:

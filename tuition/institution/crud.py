@@ -83,6 +83,81 @@ async def verify_user_account(token, db):
             detail="An error occurred during account verification"
         )
     
+"""
+Code base to be edited later for refresh inclussion and avoid hitting db server on every refresh
+"""
+# async def login_institution(db, payload):
+#     logger.info(f"Login attempt for Institution: {payload.username}")
+
+#     email = payload.username
+#     institution = await institution_utils.get_institution_by_email(db, email)
+    
+#     if not institution:
+#         logger.warning(f"Institution with email {email} not found")
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="Invalid credentials"
+#         )
+
+#     logger.info(f"Institution found***********: {email}")
+#     institution_utils.check_if_verified(institution)
+
+#     institution_object = InstitutionResponse.model_validate(institution)
+    
+#     # Verify the password
+#     institution_utils.verify_password(payload.password, institution.hashed_password)
+    
+#     # Create both access and refresh tokens
+#     access_token = create_access_token_institution(data={"sub": email})
+#     refresh_token = create_access_token_institution(data={"sub": email}, refresh_token=True)
+
+#     logger.info(f"Institution {email} logged in successfully")
+    
+#     return {
+#         "access_token": access_token["access_token"],
+#         "refresh_token": refresh_token["refresh_token"],  # Include the refresh token in the response
+#         "token_type": "bearer",
+#         "institution": institution_object
+#     }
+
+
+# @router.post("/refresh-token", response_model=Token)
+# async def refresh_token(refresh_token: str, db):
+#     try:
+#         # Decode the refresh token to verify its validity
+#         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+#         email: str = payload.get("sub")
+#         if email is None:
+#             raise HTTPException(
+#                 status_code=status.HTTP_403_FORBIDDEN,
+#                 detail="Invalid refresh token"
+#             )
+        
+#         # Check if the institution still exists in the database
+#         institution = await institution_utils.get_institution_by_email(db, email)
+#         if not institution:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="Institution not found"
+#             )
+        
+#         # Generate a new access token
+#         new_access_token = create_access_token_institution(data={"sub": email})
+        
+#         return {
+#             "access_token": new_access_token["access_token"],
+#             "token_type": "bearer"
+#         }
+
+#     except JWTError:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Invalid refresh token"
+#         )
+
+"""
+End
+"""
 
 async def login_institution(db, payload):
     logger.info(f"Login attempt for Institution: {payload.username}")
@@ -137,6 +212,7 @@ async def create_program(db, payload, Image: UploadFile, current_institution):
 
         await institution_utils.validate_deadline(payload["application_deadline"], payload["always_available"])
         await institution_utils.validate_cost(payload['cost'], payload['is_free'])
+
         #Write a function to validate if program already exists
         logger.info("Validations done!!!")
 
