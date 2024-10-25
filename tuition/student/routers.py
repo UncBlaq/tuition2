@@ -1,7 +1,10 @@
-from fastapi import APIRouter, status, BackgroundTasks, Depends
+from typing import List
+
+from fastapi import APIRouter, status, BackgroundTasks, Depends, HTTPException
 from pydantic import UUID4
 
 from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login
+from tuition.institution.schemas import InstitutionResponse
 from tuition.database import db_dependency
 from tuition.student import crud
 from tuition.security.oauth2 import get_current_user
@@ -103,7 +106,60 @@ async def confirm_reset_account_password(token : str, payload : PasswordResetCon
     return await crud.confirm_password_reset(token, payload.new_password, db)
 
 
-@student_router.post("/payments", status_code=status.HTTP_201_CREATED)
+@student_router.get("/institions/{page}/{limit}")
+async def fetch_institutions(
+                            db: db_dependency,
+                            page : int = 1,
+                            limit : int = 10
+                            ):
+    """
+    ## Fetch all institutions
+
+    This endpoint retrieves all institutions from the database and returns them as a list of `InstitutionResponse` objects.
+    ### Parameters:
+    - **db**: Database session dependency to interact with the database.
+    ### Returns:
+    - A list of `InstitutionResponse` objects representing all institutions in the database.
+    """
+
+    if page < 1 or limit >= 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid page or limit. Page must be greater than 0 and limit must be between 1 and 100."
+        )
+
+    return await crud.fetch_institutions(db, page, limit)
+
+@student_router.get('/search/{name}')
+async def search_institutions(
+                        db: db_dependency, 
+                        name : str,
+                        page : int = 1, 
+                        limit : int = 10
+                          ):
+
+     """
+    ## Search for institutions by name
+    This endpoint searches for institutions by name in the database and returns them as a list of `InstitutionResponse` objects.
+    ### Parameters:
+    - **db**: Database session dependency to interact with the database.
+    - **name**: The name of the institution to search for(Name with strings like).
+    ### Returns:
+    - A list of `InstitutionResponse` objects representing the institutions that match the search query.
+    """
+     
+     if page < 1 or limit >= 100:
+         raise HTTPException(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail="Invalid page or limit. Page must be greater than 0 and limit must be between 1 and 100."
+         )
+     
+     return await crud.search_institution(db, name, page, limit)
+     
+
+
+
+@student_router.post("/payments/{program_id}", status_code=status.HTTP_201_CREATED)
 async def create_payment(db: db_dependency, program_id: UUID4, current_student: Login = Depends(get_current_user)):
     """
     ## Create a payment for the student

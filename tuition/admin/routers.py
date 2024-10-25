@@ -60,7 +60,6 @@ async def create_admin(db : db_dependency, payload : AdminSignUp, background_tas
 
 
 @admin_router.post("/admin/subaccount_id", status_code=status.HTTP_200_OK)
-
 async def add_subaccount_id(db : db_dependency , subaccount_id : str, email : str, current_user : Login = Depends(get_current_user)):
     """
     ## Adds a subaccount ID for the admin

@@ -23,7 +23,6 @@ class Login(BaseModel):
 
 
 
-
 def generate_random_name(length = 10):
     letters = string.ascii_letters + string.digits
     return ''.join(random.choice(letters) for i in range(length))
@@ -46,43 +45,6 @@ async def upload_image_to_supabase(image: UploadFile):
     return None
 
 
-    # try:
-    #     response = supabase.storage.from_('alt_bucket').upload(image_name, content)
-    #     print({
-    #         "message": "Image uploaded successfully",
-    #         "data": response
-    #     })
-    #     if response.status_code == 200:
-    #         print("Image URL:", response.url)
-    #         return f"{SUPABASE_URL}/storage/v1/object/public/alt_bucket/{image_name}"
-    # except Exception as e:
-    #     print("Error uploading image:", str(e))
-    #     if response is not None:
-    #         print(response)  # If 'response' was set before the error, print it.
-    #     return None
-
-
-# async def upload_image_to_supabase(image: UploadFile):
-#     print("Uploading image")
-#     image_name = generate_random_name()
-#     # image.filename = image_name
-#     content = await image.read()
-#     print("Image uploaded")
-#     response = None
-#     try:
-#         response = supabase.storage.from_('alt_bucket').upload(image_name, content)
-#         print({
-#             "message": "Image uploaded successfully",
-#             "data" : response
-#         })
-#         print(response)
-#         if response.status_code == 200:
-#             print("Image URL:", response.url)
-#             return f"{SUPABASE_URL}/storage/v1/object/public/alt_bucket/{image_name}"
-#     except Exception as e:
-#         print("Error uploading image:", str(e))
-#         # print(response)
-#         return None
 
 def verify_password(provided_password: str, hashed_password: str):
     """Verify the provided password against the stored hashed password.

@@ -10,6 +10,8 @@ from tuition.security.jwt import create_access_token, decode_url_safe_token
 from tuition.emails_utils import SmtpMailService
 import tuition.student.utils as student_utils
 import tuition.institution.utils as institution_utils
+from tuition.institution.models import Institution
+from tuition.institution.schemas import InstitutionResponse
 import tuition.admin.utils as admin_utils
 
 from tuition.student.schemas import StudentResponse
@@ -92,12 +94,12 @@ async def verify_student_account(token, db):
 
 
 async def login_student(db, payload):
-    logger.info(f"Login attempt for user: {payload.username}")
+    logger.info(f"Login attempt for Student: {payload.username}")
 
     email = payload.username
     student = await student_utils.get_student_by_email(db, email)
 
-    logger.info(f"User found: {email}")
+    logger.info(f"Student found: {email}")
     student_utils.check_if_verified(student)
     student_object =  StudentResponse.model_validate(student)
     student_utils.verify_password(payload.password, student.hashed_password)
@@ -189,9 +191,39 @@ async def confirm_password_reset(token, new_password, db):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during password reset"
         )
+    
 
+async def fetch_institutions(db, page, limit):
+    logger.info(f"Fetching institutions with page {page} and limit {limit}")
+    offset = (page - 1) * limit
+    
+    stmt = select(Institution).order_by(Institution.id.desc()).offset(offset).limit(limit)
+    result = await db.execute(stmt)
+    institutions = result.scalars().all()
+    logger.info(f"Fetched {len(institutions)} institutions")
+     # Converts each Institution instance to InstitutionResponse
+    institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
+    
+    return institution_responses
 
-import uuid    
+async def search_institution(db, name, page, limit):
+
+    logger.info(f"Searching institutions by name '{name}' with page {page} and limit {limit}")
+    offset = (page - 1) * limit
+    
+    stmt = select(Institution).filter(Institution.name_of_institution.ilike(f'%{name}%')).order_by(Institution.id.desc()).offset(offset).limit(limit)
+
+    result = await db.execute(stmt)
+    institutions = result.scalars().all()
+    logger.info(f"Found {len(institutions)} institutions")
+    if len(institutions) == 0:
+        return {
+            "message" : "No instances were found for the specified name.",
+        }
+    # Converts each Institution instance to InstitutionResponse
+    institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
+    
+    return institution_responses
 
 
 async def create_payment(db, program_id, current_student):
