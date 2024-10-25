@@ -4,10 +4,10 @@ from fastapi import APIRouter, status, BackgroundTasks, Depends, HTTPException
 from pydantic import UUID4
 
 from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login
-from tuition.institution.schemas import InstitutionResponse
 from tuition.database import db_dependency
 from tuition.student import crud
 from tuition.security.oauth2 import get_current_user
+import tuition.src_utils as src_utils
 
 student_router = APIRouter(
     prefix="/student",
@@ -110,7 +110,8 @@ async def confirm_reset_account_password(token : str, payload : PasswordResetCon
 async def fetch_institutions(
                             db: db_dependency,
                             page : int = 1,
-                            limit : int = 10
+                            limit : int = 10,
+                            current_student: Login = Depends(get_current_user)
                             ):
     """
     ## Fetch all institutions
@@ -128,14 +129,15 @@ async def fetch_institutions(
             detail="Invalid page or limit. Page must be greater than 0 and limit must be between 1 and 100."
         )
 
-    return await crud.fetch_institutions(db, page, limit)
+    return await src_utils.fetch_institutions(db, page, limit, current_student)
 
 @student_router.get('/search/{name}')
 async def search_institutions(
                         db: db_dependency, 
                         name : str,
                         page : int = 1, 
-                        limit : int = 10
+                        limit : int = 10,
+                        current_student: Login = Depends(get_current_user)
                           ):
 
      """
@@ -154,7 +156,7 @@ async def search_institutions(
              detail="Invalid page or limit. Page must be greater than 0 and limit must be between 1 and 100."
          )
      
-     return await crud.search_institution(db, name, page, limit)
+     return await  src_utils.search_institution(db, name, page, limit, current_student)
      
 
 

@@ -9,6 +9,13 @@ import httpx
 from supabase import create_client, Client
 from tuition.config import Config
 
+from tuition.logger import logger
+from tuition.institution.models import Institution
+from tuition.institution.schemas import InstitutionResponse
+from sqlalchemy.future import select
+from tuition.student.utils import get_student_by_email
+from tuition.admin.utils import get_admin_by_email
+
 SUPABASE_URL = Config.SUPABASE_URL
 SUPABASE_KEY = Config.SUPABASE_KEY
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -69,3 +76,71 @@ def send_payment_request(data, headers):
     response = httpx.post(url, json=data, headers=headers)
     response.raise_for_status()
     return response.json()
+
+
+async def fetch_institutions(db, page, limit, current_user):
+    logger.info(f"Fetching institutions with page {page} and limit {limit}")
+    student  = await get_student_by_email(db, current_user.email)
+    admin = await get_admin_by_email(db, current_user.email)
+    if not student and not admin:
+        logger.warning("User does not have permission to access this resource")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have permission to access this resource"
+        )
+
+    # Validate the current user
+    if student.is_verified == False:
+        logger.warning("Student not verified")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student must verify their account before accessing this resource"
+        )
+
+    offset = (page - 1) * limit
+    
+    stmt = select(Institution).order_by(Institution.id.desc()).offset(offset).limit(limit)
+    result = await db.execute(stmt)
+    institutions = result.scalars().all()
+    logger.info(f"Fetched {len(institutions)} institutions")
+     # Converts each Institution instance to InstitutionResponse
+    institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
+    
+    return institution_responses
+
+
+async def search_institution(db, name, page, limit, current_user):
+
+    logger.info(f"Searching institutions by name '{name}' with page {page} and limit {limit}")
+    # Validate current_user
+    student  = await get_student_by_email(db, current_user.email)
+    admin = await get_admin_by_email(db, current_user.email)
+    if not student and not admin:
+        logger.warning("User does not have permission to access this resource")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have permission to access this resource"
+        )
+
+    if student.is_verified == False:
+        logger.warning("Student not verified")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student must verify their account before accessing this resource"
+        )
+    
+    offset = (page - 1) * limit
+    
+    stmt = select(Institution).filter(Institution.name_of_institution.ilike(f'%{name}%')).order_by(Institution.id.desc()).offset(offset).limit(limit)
+
+    result = await db.execute(stmt)
+    institutions = result.scalars().all()
+    logger.info(f"Found {len(institutions)} institutions")
+    if len(institutions) == 0:
+        return {
+            "message" : "No instances were found for the specified name."
+        }
+    # Converts each Institution instance to InstitutionResponse
+    institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
+    
+    return institution_responses

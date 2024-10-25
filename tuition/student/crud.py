@@ -10,8 +10,6 @@ from tuition.security.jwt import create_access_token, decode_url_safe_token
 from tuition.emails_utils import SmtpMailService
 import tuition.student.utils as student_utils
 import tuition.institution.utils as institution_utils
-from tuition.institution.models import Institution
-from tuition.institution.schemas import InstitutionResponse
 import tuition.admin.utils as admin_utils
 
 from tuition.student.schemas import StudentResponse
@@ -192,38 +190,6 @@ async def confirm_password_reset(token, new_password, db):
             detail="An error occurred during password reset"
         )
     
-
-async def fetch_institutions(db, page, limit):
-    logger.info(f"Fetching institutions with page {page} and limit {limit}")
-    offset = (page - 1) * limit
-    
-    stmt = select(Institution).order_by(Institution.id.desc()).offset(offset).limit(limit)
-    result = await db.execute(stmt)
-    institutions = result.scalars().all()
-    logger.info(f"Fetched {len(institutions)} institutions")
-     # Converts each Institution instance to InstitutionResponse
-    institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
-    
-    return institution_responses
-
-async def search_institution(db, name, page, limit):
-
-    logger.info(f"Searching institutions by name '{name}' with page {page} and limit {limit}")
-    offset = (page - 1) * limit
-    
-    stmt = select(Institution).filter(Institution.name_of_institution.ilike(f'%{name}%')).order_by(Institution.id.desc()).offset(offset).limit(limit)
-
-    result = await db.execute(stmt)
-    institutions = result.scalars().all()
-    logger.info(f"Found {len(institutions)} institutions")
-    if len(institutions) == 0:
-        return {
-            "message" : "No instances were found for the specified name.",
-        }
-    # Converts each Institution instance to InstitutionResponse
-    institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
-    
-    return institution_responses
 
 
 async def create_payment(db, program_id, current_student):
