@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, status, BackgroundTasks, Depends, HTTPException
 from pydantic import UUID4
 
-from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login
+from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login, UpdateProfile
 from tuition.database import db_dependency
 from tuition.student import crud
 from tuition.security.oauth2 import get_current_user
@@ -106,6 +106,23 @@ async def confirm_reset_account_password(token : str, payload : PasswordResetCon
     return await crud.confirm_password_reset(token, payload.new_password, db)
 
 
+@student_router.patch('/update_profile', status_code= status.HTTP_200_OK)
+
+async def update_student_profile(db: db_dependency, payload: UpdateProfile, current_student: Login = Depends(get_current_user)):
+
+    """
+    ## Updates a student's profile
+    This endpoint allows a student to update their profile information.
+    ### Parameters:
+    - **db**: Database session dependency to interact with the database.
+    - **current_student**: The current logged-in student's credentials.
+    - **payload**: The updated student profile information, including the new values for fields like full_name, email, and phone_number.
+    ### Returns:
+    - A 200 OK response indicating the successful update of the student's profile.
+    """
+    return await crud.update_student_profile(db, payload, current_student)
+
+
 @student_router.get("/institions/{page}/{limit}")
 async def fetch_institutions(
                             db: db_dependency,
@@ -186,6 +203,9 @@ async def create_payment(db: db_dependency, program_id: UUID4, current_student: 
     - A Flutterwave-hosted payment URL that the student can use to complete the payment.
     """
     return await crud.create_payment(db, program_id, current_student)
+
+
+
 
    
 

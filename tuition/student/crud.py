@@ -90,7 +90,6 @@ async def verify_student_account(token, db):
         )
 
 
-
 async def login_student(db, payload):
     logger.info(f"Login attempt for Student: {payload.username}")
 
@@ -190,6 +189,24 @@ async def confirm_password_reset(token, new_password, db):
             detail="An error occurred during password reset"
         )
     
+async def update_student_profile(db, payload, current_student):
+    logger.info(f"Updating student profile for {current_student.email}")
+    
+    student = await student_utils.get_student_by_email(db, current_student.email)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    student.bio = payload.bio
+    student.date_of_birth = payload.date_of_birth
+    student.address = payload.address
+    
+    await db.commit()
+    await db.refresh(student)
+    print(student)
+    return {
+        "message" : "Student profile updated successfully",
+        "student" : StudentResponse.model_validate(student)
+    }
 
 
 async def create_payment(db, program_id, current_student):

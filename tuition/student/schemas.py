@@ -1,7 +1,10 @@
 import re
+from datetime import date
 
 from typing import Optional, List, Text
 from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict, Field
+
+
 
 class StudentSignUp(BaseModel):
 
@@ -38,6 +41,11 @@ class StudentSignUp(BaseModel):
         if not value or value.strip() == "":
             raise ValueError('This field cannot be empty')
         return value
+
+class UpdateProfile(BaseModel):
+    bio: Optional[str] = None   
+    date_of_birth: Optional[date]  = None
+    address: Optional[str] = None
 
 class StudentResponse(BaseModel):
      full_name: str

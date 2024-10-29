@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric
+from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric, Date
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
@@ -10,6 +10,11 @@ class Student(Base):
     __tablename__ = 'students'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+
+    bio = Column(Text, nullable=True)
+    date_of_birth = Column(Date, nullable=True)
+    address = Column(Text, nullable=True)
+
     full_name = Column(String(255), nullable=False)
     email = Column(Text, unique=True, nullable=False)
     role = Column(String, nullable=False, default = 'user')

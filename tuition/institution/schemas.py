@@ -64,7 +64,6 @@ class InstitutionResponse(BaseModel):
         )
     
 from enum import Enum
-from fastapi import HTTPException
 
 class ProgramLevel(str, Enum):
     graduate = "Graduate"
