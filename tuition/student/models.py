@@ -1,8 +1,8 @@
-from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric, Date
+from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric, Date, Boolean, JSON
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import uuid
 
-from sqlalchemy import Column, String, Boolean, Text
 from tuition.database import Base
 
 
@@ -24,6 +24,8 @@ class Student(Base):
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
+
+    applications = relationship('Application', back_populates= 'student')
 
     # transactions = relationship('Transaction', back_populates='students')
     # payments = relationship('Payment', back_populates='students')
@@ -60,4 +62,26 @@ class Transaction(Base):
 
     # institution_id = Column(UUID, ForeignKey('institutions.id'))
     # payments = relationship('Payment', back_populates='transactions')
+
+
+class Application(Base):
+    __tablename__ = 'applications'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    application_date = Column(DateTime, default=func.now(), nullable=False)
+    updated_date = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)  
+    status = Column(String, default='Pending', nullable=False)
+    custom_fields = Column(JSON, default={}, nullable=True)  
+
+    student_id = Column(UUID, ForeignKey('students.id'), nullable=False)  
+    application_type_id = Column(UUID, ForeignKey('programs.id'), nullable=True)  
+
+    application_type = Column(String(255), nullable=False)
+
+    program = relationship("Program", back_populates="applications")
+    student = relationship("Student", back_populates="applications")
+
+    
+
+
 

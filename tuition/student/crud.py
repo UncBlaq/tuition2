@@ -3,8 +3,8 @@ import os
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from tuition.security.hash import Hash
-from tuition.student.models import Student
-from tuition.src_utils import send_payment_request
+from tuition.student.models import Student, Application
+from tuition.src_utils import send_payment_request, get_program_by_id, get_existing_application
 from sqlalchemy.future import select
 from tuition.security.jwt import create_access_token, decode_url_safe_token
 from tuition.emails_utils import SmtpMailService
@@ -209,6 +209,42 @@ async def update_student_profile(db, payload, current_student):
     }
 
 
+async def apply_for_program(db, application, current_student):
+    logger.info(f"Application for: {application.program_id} for student: {current_student.email}")
+    
+    student = await student_utils.get_student_by_email(db, current_student.email)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    program = await get_program_by_id(db, application.program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    
+    # Check if the student has already applied for the program
+    existing_application = await get_existing_application(db, student.id, application.program_id)
+    if existing_application:
+        raise HTTPException(status_code=409, detail="Student has already applied for this program")
+    
+    # Create a new application
+    application = Application(
+        student_id=student.id,
+        application_type_id=application.program_id,
+        application_type = "program",
+        custom_fields = application.custom_field
+    )
+    db.add(application)
+    await db.commit()
+    await db.refresh(application)
+    
+    return {
+        "message" : "Application created successfully",
+        "application" : application,
+        "program_cost" : program["is_free"]
+    }
+
+
+
+
 async def create_payment(db, program_id, current_student):
     logger.info(f"Creating payment for student********: {current_student.email}")
 
@@ -216,15 +252,13 @@ async def create_payment(db, program_id, current_student):
     logger.info(f"Student ALL*****: {student}")
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-  
     program = await institution_utils.get_program_by_id(db, program_id)
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
-
+    
     subaccount = await institution_utils.get_program_subaccount(db, program.institution_id)  
     if not subaccount:
         raise HTTPException(status_code=404, detail="Subaccount not found")
-    
     headers = {
         'Authorization': f'Bearer {FLW_SECRET_KEY}',
         'Content-Type': 'application/json'
@@ -238,14 +272,14 @@ async def create_payment(db, program_id, current_student):
         "tx_ref": f"TUIT_{student.id}_{os.urandom(8).hex()}",  # Unique transaction reference
         "amount": float_cost,  # Fetch the amount from the program
         "currency": "NGN",
-        "redirect_url": "https://yourplatform.com/payment-success",
+        "redirect_url": "https://altwavetuition.vercel.app/",
         "customer": {
             "email": student.email,
             "name": student.full_name,
             "phonenumber": student.phone_number
         },
         "customizations": {
-            "title": program.name_of_program  # Use the program name for the payment title
+            "title": program.name_of_program  
         },
         "subaccounts": [
             {

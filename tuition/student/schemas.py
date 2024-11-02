@@ -1,8 +1,8 @@
 import re
 from datetime import date
 
-from typing import Optional, List, Text
-from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict, Field
+from typing import Optional, List, Text, Dict, Any
+from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict, Field, UUID4, Json
 
 
 
@@ -58,6 +58,10 @@ class StudentResponse(BaseModel):
      model_config = ConfigDict(
         from_attributes=True
         )
+
+class Application(BaseModel):
+    program_id: UUID4
+    custom_field : Optional[Dict[str, Any]] = None 
 
 class Token(BaseModel):
     access_token: str

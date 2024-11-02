@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, status, BackgroundTasks, Depends, HTTPException
 from pydantic import UUID4
 
-from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login, UpdateProfile
+from tuition.student.schemas import StudentSignUp, StudentResponse, PasswordResquest, PasswordResetConfirm, Login, UpdateProfile, Application
 from tuition.database import db_dependency
 from tuition.student import crud
 from tuition.security.oauth2 import get_current_user
@@ -107,7 +107,6 @@ async def confirm_reset_account_password(token : str, payload : PasswordResetCon
 
 
 @student_router.patch('/update_profile', status_code= status.HTTP_200_OK)
-
 async def update_student_profile(db: db_dependency, payload: UpdateProfile, current_student: Login = Depends(get_current_user)):
 
     """
@@ -121,6 +120,21 @@ async def update_student_profile(db: db_dependency, payload: UpdateProfile, curr
     - A 200 OK response indicating the successful update of the student's profile.
     """
     return await crud.update_student_profile(db, payload, current_student)
+
+@student_router.post('/application/{program_id}')
+async def apply_for_program(db : db_dependency, application: Application, current_student : Login = Depends(get_current_user)):
+    """
+    ## Apply for a program
+
+    This endpoint allows a student to apply for a program by providing their details.
+    ### Parameters:
+    - **db**: Database session dependency to interact with the database.
+    - **payload**: The program ID (UUID4) for which the student is applying.
+    - **current_student**: The current logged-in student's credentials.
+    ### Returns:
+    - A 200 OK response indicating the successful application for the program.
+    """
+    return await crud.apply_for_program(db, application, current_student)
 
 
 @student_router.get("/institions/{page}/{limit}")
@@ -174,8 +188,6 @@ async def search_institutions(
          )
      
      return await  src_utils.search_institution(db, name, page, limit, current_student)
-     
-
 
 
 @student_router.post("/payments/{program_id}", status_code=status.HTTP_201_CREATED)

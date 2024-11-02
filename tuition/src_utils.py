@@ -10,11 +10,12 @@ from supabase import create_client, Client
 from tuition.config import Config
 
 from tuition.logger import logger
-from tuition.institution.models import Institution
+from tuition.institution.models import Institution, Program
 from tuition.institution.schemas import InstitutionResponse
 from sqlalchemy.future import select
 from tuition.student.utils import get_student_by_email
 from tuition.admin.utils import get_admin_by_email
+from tuition.student.models import Application
 
 SUPABASE_URL = Config.SUPABASE_URL
 SUPABASE_KEY = Config.SUPABASE_KEY
@@ -144,3 +145,37 @@ async def search_institution(db, name, page, limit, current_user):
     institution_responses = [InstitutionResponse.model_validate(inst) for inst in institutions]
     
     return institution_responses
+
+
+async def get_program_by_id(db, program_id):
+    logger.info(f"Fetching program with id {program_id}")
+    stmt = select(Program).filter(Program.id == program_id)
+    result = await db.execute(stmt)
+    program = result.scalar_one_or_none()
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    program_json = {
+            "id": program.id,
+            "program_name": program.name_of_program,
+            "program_level": program.program_level,
+            "always_available": program.always_available,
+            "application_deadline": program.application_deadline,
+            "cost": program.cost,
+            "is_free": program.is_free,
+            "currency_code": program.currency_code,
+            "description": program.description,
+            "institution_id": program.institution_id,
+            "subaccount_id": program.subaccount_id,
+            "image_url": program.image_url
+        }
+    return  program_json
+
+async def get_existing_application(db, student_id, program_id):
+
+    logger.info(f"Fetching existing application for student_id {student_id} and program_id {program_id}")
+    stmt = select(Application).filter(Application.student_id == student_id).filter(Application.application_type_id == program_id)
+    result = await db.execute(stmt)
+    application = result.scalar_one_or_none()
+    return application
+
+

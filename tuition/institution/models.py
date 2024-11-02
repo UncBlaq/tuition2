@@ -87,6 +87,9 @@ class Program(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    applications = relationship('Application', back_populates= 'program')
+    
+
     institution = relationship("Institution", back_populates='programs')
     categories = relationship(
         'Category', 
@@ -101,46 +104,3 @@ class Program(Base):
         ),
     )
 
-
-
-
-# class Category(Base):
-#     __tablename__ = 'categories'
-
-#     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-#     name = Column(String(255), nullable=False, unique=True)
-
-#     programs = relationship('Program', back_populates='category')
-    
-
-# class Program(Base):
-#     __tablename__ = 'programs'
-
-#     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-#     program_level = Column(String(255), nullable=False)
-#     Category_id = Column(UUID, ForeignKey("categories.id"))
-
-#     name_of_program = Column(String(255), nullable=False)
-#     institution_id = Column(UUID, ForeignKey('institutions.id'))
-#     # Deadline should be nullable for evergreen programs (always available)
-#     application_deadline = Column(DateTime(timezone=True), nullable=True)  # TIMESTAMPTZ equivalent
-#     # Boolean to track if the program is always available
-#     always_available = Column(Boolean, default=False)
-#     description = Column(Text)
-#     cost = Column(Numeric(12, 2), nullable=True)
-#     subaccount_id = Column(String)
-#     is_free = Column(Boolean, default=False)
-#     currency_code = Column(CHAR(3), nullable=False)
-#     image_url = Column(String, nullable=False)
-#     created_at = Column(DateTime(timezone=True), server_default=func.now())  # timezone-aware
-#     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
-
-#     institution = relationship("Institution", back_populates='programs')
-#     category = relationship("Category", back_populates='programs')
-
-#     __table_args__ = (
-#         CheckConstraint(
-#             "(application_deadline > now()) OR (application_deadline IS NULL)", 
-#             name="check_application_deadline_future"
-#         ),
-#     )
