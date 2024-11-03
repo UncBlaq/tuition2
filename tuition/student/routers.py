@@ -191,7 +191,7 @@ async def search_institutions(
 
 
 @student_router.post("/payments/{program_id}", status_code=status.HTTP_201_CREATED)
-async def create_payment(db: db_dependency, program_id: UUID4, current_student: Login = Depends(get_current_user)):
+async def create_payment(db: db_dependency, application_id: UUID4, current_student: Login = Depends(get_current_user)):
     """
     ## Create a payment for the student
 
@@ -214,7 +214,7 @@ async def create_payment(db: db_dependency, program_id: UUID4, current_student: 
     ### Returns:
     - A Flutterwave-hosted payment URL that the student can use to complete the payment.
     """
-    return await crud.create_payment(db, program_id, current_student)
+    return await crud.create_payment(db, application_id, current_student)
 
 
 

@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from tuition.security.hash import Hash
 from tuition.student.models import Student, Application
-from tuition.src_utils import send_payment_request, get_program_by_id, get_existing_application
+from tuition.src_utils import send_payment_request, get_program_by_id, get_existing_application, get_application_by_id
 from sqlalchemy.future import select
 from tuition.security.jwt import create_access_token, decode_url_safe_token
 from tuition.emails_utils import SmtpMailService
@@ -243,16 +243,15 @@ async def apply_for_program(db, application, current_student):
     }
 
 
-
-
-async def create_payment(db, program_id, current_student):
+async def create_payment(db, application_id, current_student):
     logger.info(f"Creating payment for student********: {current_student.email}")
-
     student = await student_utils.get_student_by_email(db, current_student.email)
-    logger.info(f"Student ALL*****: {student}")
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    program = await institution_utils.get_program_by_id(db, program_id)
+    application = await get_application_by_id(db, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    program = await institution_utils.get_program_by_id(db, application.application_type_id)
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
     

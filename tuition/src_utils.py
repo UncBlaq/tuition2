@@ -179,3 +179,13 @@ async def get_existing_application(db, student_id, program_id):
     return application
 
 
+async def get_application_by_id(db, application_id):
+
+    stmt = select(Application).filter(Application.id == application_id)
+    result = await db.execute(stmt)
+    application = result.scalar_one_or_none()  # Fetches the result or None if not found
+    return application
+
+
+
+
