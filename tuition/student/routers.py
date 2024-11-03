@@ -190,7 +190,7 @@ async def search_institutions(
      return await  src_utils.search_institution(db, name, page, limit, current_student)
 
 
-@student_router.post("/payments/{program_id}", status_code=status.HTTP_201_CREATED)
+@student_router.post("/payments/{application_id}", status_code=status.HTTP_201_CREATED)
 async def create_payment(db: db_dependency, application_id: UUID4, current_student: Login = Depends(get_current_user)):
     """
     ## Create a payment for the student
@@ -199,7 +199,7 @@ async def create_payment(db: db_dependency, application_id: UUID4, current_stude
 
     ### Parameters:
     - **db**: Database session dependency to interact with the database.
-    - **program_id**: UUID of the program the student is paying for.
+    - **application_id**: UUID of the program the student is paying for.
     - **current_student**: Current authenticated student object retrieved using the login token.
 
     ### Body Parameters (from `crud.create_payment` function):
