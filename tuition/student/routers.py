@@ -217,6 +217,20 @@ async def create_payment(db: db_dependency, application_id: UUID4, current_stude
     return await crud.create_payment(db, application_id, current_student)
 
 
+@student_router.post('/transactions/', status_code=status.HTTP_200_OK)
+async def fetch_transactions(db: db_dependency, current_student: Login = Depends(get_current_user)):
+    """
+    ## Fetch all transactions for the student
+    This endpoint retrieves all transactions for the student from the database and returns them as a list of `TransactionResponse` objects.
+    ### Parameters:
+    - **db**: Database session dependency to interact with the database.
+    - **current_student**: The current logged-in student's credentials.
+    ### Returns:
+    - A list of `TransactionResponse` objects representing all transactions for the student.
+    """
+    return await src_utils.fetch_transactions(db, current_student)
+
+
 
 
    

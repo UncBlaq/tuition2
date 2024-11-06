@@ -15,7 +15,7 @@ from tuition.institution.schemas import InstitutionResponse
 from sqlalchemy.future import select
 from tuition.student.utils import get_student_by_email
 from tuition.admin.utils import get_admin_by_email
-from tuition.student.models import Application
+from tuition.student.models import Application, Transaction
 
 SUPABASE_URL = Config.SUPABASE_URL
 SUPABASE_KEY = Config.SUPABASE_KEY
@@ -109,6 +109,31 @@ async def fetch_institutions(db, page, limit, current_user):
     
     return institution_responses
 
+async def fetch_transactions(db, current_user):
+    logger.info(f"Fetching transactions for student: {current_user.email}")
+    student  = await get_student_by_email(db, current_user.email)
+    admin = await get_admin_by_email(db, current_user.email)
+    if not student and not admin:
+        logger.warning("User does not have permission to access this resource")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have permission to access this resource"
+        )
+    
+    if student.is_verified == False:
+        logger.warning("Student not verified")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student must verify their account before accessing this resource"
+        )
+    
+    # Fetching transactions
+    stmt = select(Transaction).where(Transaction.student_id == student.id)
+    result = await db.execute(stmt)
+    transactions = result.scalars().all()
+    logger.info(f"Fetched {len(transactions)} transactions")
+
+    return transactions
 
 async def search_institution(db, name, page, limit, current_user):
 
@@ -185,6 +210,8 @@ async def get_application_by_id(db, application_id):
     result = await db.execute(stmt)
     application = result.scalar_one_or_none()  # Fetches the result or None if not found
     return application
+
+
 
 
 

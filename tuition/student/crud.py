@@ -3,7 +3,7 @@ import os
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from tuition.security.hash import Hash
-from tuition.student.models import Student, Application
+from tuition.student.models import Student, Application, Transaction
 from tuition.src_utils import send_payment_request, get_program_by_id, get_existing_application, get_application_by_id
 from sqlalchemy.future import select
 from tuition.security.jwt import create_access_token, decode_url_safe_token
@@ -239,7 +239,7 @@ async def apply_for_program(db, application, current_student):
     return {
         "message" : "Application created successfully",
         "application" : application,
-        "program_cost" : program["is_free"]
+        "program_cost" : program["cost"]
     }
 
 
@@ -267,8 +267,7 @@ async def create_payment(db, application_id, current_student):
     logger.info(f"{subaccount.subaccount_id}")
 
     data = {
-        # "tx_ref": f"TUIT_{student.id}_{uuid.uuid4().hex()}",
-        "tx_ref": f"TUIT_{student.id}_{os.urandom(8).hex()}",  # Unique transaction reference
+        "tx_ref": f"FLW_{student.id}_{os.urandom(8).hex()}",  # Unique transaction reference
         "amount": float_cost,  # Fetch the amount from the program
         "currency": "NGN",
         "redirect_url": "https://altwavetuition.vercel.app/",
@@ -286,8 +285,20 @@ async def create_payment(db, application_id, current_student):
             }
         ]
     }
+    new_transaction = Transaction(
+        title=program.name_of_program,
+        description=f"Payment for {program.name_of_program}",
+        payment_method="flutterwave",
+        currency=program.currency_code, 
+        student_id=student.id,
+        institution_id=program.institution_id,
+        transaction_type="program_payment",
+        amount=program.cost
+    )
+    db.add(new_transaction)
+    await db.commit()
+    await db.refresh(new_transaction)
 
-    # Add the task to the background tasks
     return send_payment_request(data, headers)
 
 

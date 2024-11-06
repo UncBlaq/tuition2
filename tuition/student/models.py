@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric, Date, Boolean, JSON
+from sqlalchemy import Column, String, Text, DateTime, func, ForeignKey, Numeric, Date, Boolean, JSON, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -26,42 +26,40 @@ class Student(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # timezone-aware
 
     applications = relationship('Application', back_populates= 'student')
+    transactions = relationship('Transaction', back_populates='student')
 
-    # transactions = relationship('Transaction', back_populates='students')
-    # payments = relationship('Payment', back_populates='students')
-
-
-    
 #exclude = True
-
-
-# class Payment(Base):
-#     __tablename__ = 'payments'
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     student_id = Column(Integer, ForeignKey('students.id'))
-#     transaction_id = Column(Integer, ForeignKey('transactions.id'))
-#     amount = Column(Numeric, nullable=False)
-#     payment_date = Column(DateTime, default=lambda: datetime.now)
-#     payment_status = Column(String, default='Completed')
-
-#     student = relationship('Student', back_populates='payments')
-#     transaction = relationship('Transaction', back_populates='payments')
-
 
 class Transaction(Base):
 
     __tablename__ = 'transactions'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    payment_method = Column(String, default= 'flutterwave',nullable=False)
+
+    receiver_email = Column(String, default=None, nullable=True)
+    receiver_phone = Column(String, default=None, nullable=True)
+    currency = Column(String, default='NGN', nullable=False)
+    exchange_rate = Column(String)
+    delivery_method = Column(String, default=None, nullable=True)
+    claim_bank = Column(String, default=None, nullable=True)
+    claim_account = Column(String, default=None, nullable=True)
+    stash = Column(Integer, default=None, nullable=True)
+
+    student_name = Column(String, default='Student Name', nullable = False)
     student_id = Column(UUID, ForeignKey('students.id'))
+    institution_id = Column(UUID, ForeignKey('institutions.id'))
+
     transaction_date = Column(DateTime, default=func.now())
     transaction_type = Column(String, nullable=False)
     amount = Column(Numeric, nullable=False)
-    status = Column(String, default='Completed')
+    status = Column(String, default='pending')
 
-    # institution_id = Column(UUID, ForeignKey('institutions.id'))
-    # payments = relationship('Payment', back_populates='transactions')
+    student = relationship("Student", back_populates="transactions")
+    institution = relationship("Institution", back_populates="transactions")
 
 
 class Application(Base):
