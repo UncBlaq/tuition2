@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String, Text, ForeignKey, Numeric, DateTime, func, CHAR, CheckConstraint, Table
+from sqlalchemy import Column, DateTime, String, Text, ForeignKey, Numeric, DateTime, func, CHAR, CheckConstraint, Table, Integer
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy.orm import relationship
@@ -29,6 +29,7 @@ class Institution(Base):
     sub_accounts = relationship('SubAccount', back_populates='institution')
     programs = relationship('Program', back_populates='institution')
     transactions = relationship('Transaction', back_populates='institution')
+    events = relationship('Event', back_populates='institution')
 
 
 class SubAccount(Base):
@@ -103,4 +104,32 @@ class Program(Base):
             name="check_application_deadline_future"
         ),
     )
+
+
+class Event(Base):
+
+    __tablename__ = 'events'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name_of_event = Column(String, nullable=False)
+    institution_id = Column(UUID, ForeignKey('institutions.id'))
+    description = Column(Text, nullable=False)
+    start_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True), nullable=False)
+    application_deadline = Column(DateTime(timezone=True), nullable = True) # timezone-aware
+    image_url = Column(String(255), nullable=False)
+    location = Column(String, nullable=False)
+    is_online = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())  # timezone-aware
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())  # timezone-aware
+    cost = Column(Numeric(12, 2), nullable=True)
+    subaccount_id = Column(String)
+    is_free = Column(Boolean, default=False)
+    currency_code = Column(CHAR(3), nullable=False)
+    image_url = Column(String, nullable=False)
+    capacity = Column(Integer, nullable=False)
+
+
+
+    institution = relationship("Institution", back_populates='events')
 

@@ -1,10 +1,10 @@
 from decimal import Decimal
 from typing import List
 from datetime import datetime
-from typing import Annotated,Optional
+from typing import Annotated,Optional, Literal
 from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, Form, HTTPException
 
-from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank, ProgramLevel, Category
+from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank, ProgramLevel, Category, Event
 from tuition.database import db_dependency
 from tuition.institution import crud
 from tuition.security.oauth2 import get_current_user
@@ -182,5 +182,73 @@ async def create_program(
     }
 
     return await crud.create_program(db, payload, image, current_institution)
+
+@institution_router.post('/event/', status_code=status.HTTP_201_CREATED)
+async def create_event(
+        db: db_dependency,
+        name_of_event: Annotated[str, Form()],
+        description: Annotated[str, Form()],
+        start_date: Annotated[datetime, Form()],
+        end_date: Annotated[datetime, Form()],
+        location: Annotated[str, Form()],
+        application_deadline : Annotated[datetime, Form()],
+        is_online: Annotated[Literal['physical', 'online'], Form()],
+        is_free: Annotated[bool, Form()],
+        currency_code:  Annotated[str, Form(..., min_length=3, max_length=3)],
+        image: UploadFile,
+        capacity: Annotated[int, Form()],
+        cost : Optional[Decimal] = Form(None),
+        current_institution: Login = Depends(get_current_user)
+):
+    
+    """
+    ## Creates a new event
+    
+    This endpoint allows institutions to create a new event.
+    The event details, including its location, type, capacity, and specifications, must be provided in the form data.
+    
+    **Parameters:**
+    - `db` (db_dependency): The database session dependency.
+    - `name_of_event` (str): The name of the event.
+    - `description` (str): A detailed description of the event.
+    - `start_date` (datetime): The start date of the event.
+    - `end_date` (datetime): The end date of the event.
+    - `location` (str): The location of the event.
+    - `is_online` (Literal['physical', 'online']): Indicates if the event is online or physical.
+    - `is_free` (bool): Indicates if the event is offered for free.
+    - `currency_code` (str): The currency code (3 letters, e.g., USD) for the event's cost.
+    - `image` (UploadFile): An image file representing the event.
+    - `capacity` (str): The capacity of the event.
+    
+    - `current_institution` (Login): The currently authenticated institution
+    **Returns:**
+    - (str): A success message indicating that the event has been created.
+    
+    **Responses:**
+    - **201 Created**: Indicates that the event was created successfully.
+    - **400 Bad Request**: If the form data is invalid or required fields are missing.
+    - **401 Unauthorized**: If the institution is not authenticated.
+    - **403 Forbidden**: If the institution does not have permission to create an event.
+
+    """
+    payload = {
+        "name_of_event": name_of_event,
+        "description": description,
+        "start_date": start_date,
+        "end_date": end_date,
+        "location": location,
+        "is_online": is_online,
+        "is_free": is_free,
+        "currency_code": currency_code,
+        "capacity": capacity,
+        "cost": cost,
+        "application_deadline": application_deadline,
+    }
+    
+    return await crud.create_event(db, payload, image, current_institution)
+    
+
+
+
 
 

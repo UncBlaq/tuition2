@@ -1,7 +1,10 @@
 import re
 
-from typing import Optional
+from typing import Optional, Literal, Annotated
 from pydantic import BaseModel, field_validator, ValidationInfo, ConfigDict, Field, EmailStr
+from datetime import date
+
+from fastapi import UploadFile
 
 
 class InstitutionSignup(BaseModel):
@@ -106,6 +109,7 @@ class InstitutionBank(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
         )
+    
 
 
 class Login(BaseModel):

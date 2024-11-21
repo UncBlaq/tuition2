@@ -8,7 +8,7 @@ from tuition.institution.schemas import InstitutionResponse
 from tuition.src_utils import upload_image_to_supabase
 
 
-from tuition.institution.models import Institution
+from tuition.institution.models import Institution, Event
 import tuition.institution.utils as institution_utils
 import tuition.student.utils as student_utils
 import tuition.admin.utils as admin_utils
@@ -238,6 +238,59 @@ async def create_program(db, payload, Image: UploadFile, current_institution):
 
         return new_program
 
+
+async def create_event(db, payload, image, current_institution):
+    logger.info(f"Attempting to create a new event for Institution: {current_institution.email}")
+
+    await institution_utils.validate_cost(payload['cost'], payload['is_free'])
+    await institution_utils.validate_end_date_deadline(payload['application_deadline'], payload['end_date'])
+
+    institution = await institution_utils.get_institution_by_email(db, current_institution.email)
+    if institution is None:
+        logger.warning(f"Institution not found: {current_institution.email}")
+        raise HTTPException(status_code=404, detail="Institution not found and You do not have access to this endpoint")
+    
+    subaccount = await institution_utils.get_subaccount_id_by_institution(db, institution.id)
+    if not subaccount:
+            logger.warning(f"Subaccount not found for Institution: {current_institution.email}")
+            raise HTTPException(status_code=404, detail="Subaccount not found, Add Instition account details before creating a Program")
+    image_url = await upload_image_to_supabase(image)
+    if not image_url:
+            raise HTTPException(status_code=500, detail="Image upload failed")
+    new_event = Event(
+        institution_id=institution.id,
+        name_of_event=payload['name_of_event'],
+        description=payload['description'],
+        start_date=payload['start_date'],
+        end_date=payload['end_date'],
+        location=payload['location'],
+        image_url=image_url,
+        capacity=payload['capacity'],
+        is_free=payload['is_free'],
+        cost=payload['cost'],
+        currency_code=payload['currency_code'],
+        subaccount_id=subaccount.subaccount_id,
+        application_deadline=payload['application_deadline']
+    )
+    event_json = {
+         "event": {
+              "name_of_event": new_event.name_of_event,
+              "description": new_event.description,
+              "start_date": new_event.start_date,
+              "end_date": new_event.end_date,
+              "location": new_event.location,
+              "capacity": new_event.capacity,
+              "is_free": new_event.is_free,
+              "cost": new_event.cost,
+              "currency_code": new_event.currency_code,
+              "subaccount_id": new_event.subaccount_id,
+              "application_deadline": new_event.application_deadline,
+         }
+    }
+
+    db.add(new_event)
+    await db.commit()
+    return event_json
 
 
 

@@ -182,6 +182,13 @@ async def validate_deadline(application_deadline, always_available):
     if application_deadline <= datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="The application deadline must be in the future.")
 
+
+async def validate_end_date_deadline(applicaton_deadline, end_date):
+    if end_date <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="The end date must be in the future.")
+    
+    if applicaton_deadline is not None and applicaton_deadline > end_date:
+        raise HTTPException(status_code=400, detail="The application deadline must be earlier than the end date.")
     
 
 async def validate_cost(cost, is_free):

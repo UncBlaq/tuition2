@@ -79,6 +79,9 @@ class Application(Base):
     program = relationship("Program", back_populates="applications")
     student = relationship("Student", back_populates="applications")
 
+
+
+
     
 
 
