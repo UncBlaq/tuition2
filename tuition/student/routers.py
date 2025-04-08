@@ -9,6 +9,7 @@ from tuition.student import crud
 from tuition.security.oauth2 import get_current_user
 import tuition.src_utils as src_utils
 
+
 student_router = APIRouter(
     prefix="/student",
     tags=["Student"]
@@ -229,6 +230,25 @@ async def fetch_transactions(db: db_dependency, current_student: Login = Depends
     - A list of `TransactionResponse` objects representing all transactions for the student.
     """
     return await src_utils.fetch_transactions(db, current_student)
+
+@student_router.post('/programs/{level}', status_code=status.HTTP_200_OK)
+async def fetch_level_programs(db : db_dependency, level : str, current_student: Login = Depends(get_current_user)):
+    """
+    Fetch a list of programs available for a specific academic level.
+
+    Args:
+        level (str): The academic level to filter programs by (e.g., 'Undergraduate', 'Graduate').
+        current_student (Login): Requires authentication of a logged-in student.
+
+    Returns:
+        dict: A JSON response containing a list of programs and related links.
+              The 'programs' key holds an array of program objects, each with 'id', 'name', and 'email' (example fields).
+              The '_links' key provides HATEOAS links for navigation.
+    """
+    return await crud.get_level_programs(db, level)
+
+
+
 
 
 

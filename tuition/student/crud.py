@@ -1,5 +1,5 @@
 import os
-
+from sqlalchemy.sql import text
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from tuition.security.hash import Hash
@@ -300,6 +300,31 @@ async def create_payment(db, application_id, current_student):
     await db.refresh(new_transaction)
 
     return send_payment_request(data, headers)
+
+async def get_level_programs(db, level):
+    query = text("SELECT * FROM fetch_program(:level)")
+    result = await db.execute(query, {"level": level})
+    rows = result.fetchall()  # Or use result.mappings().all() if your DB driver supports it
+
+    programs = []
+    for r in rows:
+        program = {
+            "id": r[0],
+            "name": r[1],
+            "email": r[2]
+        }
+        programs.append(program)
+
+    return {
+        "programs": programs,
+        "_links": {
+            "self": { "href": f"/programs/{level}" },
+            "levels": { "href": "/programs/levels" },
+            "enrollments": { "href": "/enrollments" },
+            "student": { "href": "/students/me" }
+        }
+    }
+    
 
 
 

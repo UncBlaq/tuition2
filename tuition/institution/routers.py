@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated,Optional, Literal
 from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, Form, HTTPException
 
-from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank, ProgramLevel, Category, Event
+from tuition.institution.schemas import Login, InstitutionSignup, InstitutionResponse, InstitutionBank, ProgramLevel, Category
 from tuition.database import db_dependency
 from tuition.institution import crud
 from tuition.security.oauth2 import get_current_user

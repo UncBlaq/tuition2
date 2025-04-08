@@ -120,7 +120,6 @@ async def add_program_category(db, category, current_user):
     return {
         "message": f"Category successfully added"
     }
-    
 
 
 
